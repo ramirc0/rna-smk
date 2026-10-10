@@ -1,0 +1,8 @@
+# ENCODE total RNA-seq biological replicates, one FASTQ pair each. Gingeras lab
+# (CSHL), rRNA-depleted, reverse-stranded, 101 bp paired-end.
+# ENCSR000AEC: GM12878. ENCSR000AEL: K562.
+sample_id	r1	r2	group
+ENCSR000AEC_rep1	/data/projects/encode/data/ENCSR000AEC/ENCFF001RFH.fastq.gz	/data/projects/encode/data/ENCSR000AEC/ENCFF001RFG.fastq.gz	ENCSR000AEC
+ENCSR000AEC_rep2	/data/projects/encode/data/ENCSR000AEC/ENCFF001RFB.fastq.gz	/data/projects/encode/data/ENCSR000AEC/ENCFF001RFA.fastq.gz	ENCSR000AEC
+ENCSR000AEL_rep1	/data/projects/encode/data/ENCSR000AEL/ENCFF001RFF.fastq.gz	/data/projects/encode/data/ENCSR000AEL/ENCFF001RFE.fastq.gz	ENCSR000AEL
+ENCSR000AEL_rep2	/data/projects/encode/data/ENCSR000AEL/ENCFF001RFD.fastq.gz	/data/projects/encode/data/ENCSR000AEL/ENCFF001RFC.fastq.gz	ENCSR000AEL

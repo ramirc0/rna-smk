@@ -28,6 +28,7 @@ workflow/
   scripts/               argparse scripts, each with build_parser() + main()
   envs/pixi.toml         production rule env (pixi workspace)
   envs/qc/pixi.toml      QC rule env (a separate pixi workspace)
+.tests/integration/      ENCODE end-to-end test: config + sample sheet
 profiles/
   local/config.yaml      local execution
   slurm/config.yaml      SLURM (per-rule resources, retried with more memory)
@@ -54,6 +55,21 @@ Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
 `rsem_quant` MUST run with 44 threads. RSEM's Gibbs sampling and credibility
 intervals change with `-p`, so another thread count gives other numbers. The
 local profile sets `cores: 44` for this reason.
+
+## Integration test
+
+`.tests/integration/` runs four ENCODE total RNA-seq replicates end to end on
+full GRCh38. They are two replicates each of GM12878 (ENCSR000AEC) and K562
+(ENCSR000AEL). Each experiment is one `group`, so the test also runs MAD QC.
+The inputs live on the Weng Lab cluster, so it runs only there.
+
+```bash
+snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
+```
+
+Outputs go under `results/integration/`. The test builds its own STAR and RSEM
+indexes there, so it never touches `results/refs/`. Compare the QC with ENCODE's
+for the same replicates.
 
 ## Inputs
 

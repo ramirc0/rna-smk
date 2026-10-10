@@ -1,0 +1,15 @@
+samples: .tests/integration/samples.tsv
+# Its own refs: a different first sample would rebuild results/refs/index.
+outdir: results/integration
+pixi_env: default
+run_id: encode-integration
+
+references:
+  fasta: /data/zusers/ramirezc/atac-smk/resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+  gtf: /data/zusers/ramirezc/static/gencode.v49.basic.annotation.gtf
+
+sequencing:
+  endedness: paired
+  is_stranded: true
+  strand_direction: reverse
+  rsem_seed: 42
