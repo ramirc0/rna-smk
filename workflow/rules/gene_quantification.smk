@@ -9,7 +9,7 @@ rule rsem_index:
         gtf=config['input_files']['gtf_file'],
         transcript_to_gene_map=(f"--transcript-to-gene-map {Path(config['input_files']['knownIsoforms']).name}", config['input_files']['knownIsoforms']) if config['input_files'].get('knownIsoforms') else "",
         rsem_index_prefix="results/rsem_index/rsem"
-    container: config['container']
+    software: SOFTWARE_ENV
     log: "logs/rsem_index.log"
     shell:
         """
@@ -43,7 +43,7 @@ rule rsem_quant:
         endedness=config['sequencing']['endedness'],
         strand_direction=config['sequencing']['strand_direction'],
         rsem_seed=config['sequencing']['rsem_seed']
-    container: config['container']
+    software: SOFTWARE_ENV
     log: "logs/rsem_quant/{sample}.log"
     shell:
         """

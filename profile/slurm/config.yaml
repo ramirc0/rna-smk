@@ -44,10 +44,11 @@ set-resources:
     cpus_per_task: 44
     mem_mb: 128000
 
-use-apptainer: True
-apptainer-prefix: workflow/rules/envs
-software-deployment-method: apptainer
-apptainer-args: -B /zata,/data
+software-deployment-method:
+  - pixi
+# Snakemake copies every env package here. pixi installs from its own cache.
+# One copy per user instead of one per workdir.
+software-deployment-cache-prefix: ~/.cache/snakemake/software
 
 # max-jobs-per-timespan: 1/2s
 rerun-incomplete: True

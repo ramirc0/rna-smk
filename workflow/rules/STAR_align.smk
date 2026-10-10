@@ -19,7 +19,7 @@ rule index:
         sample=FIRST_SAMPLE,
         fasta=config['input_files']['reference_fasta'],
         gtf=config['input_files']['gtf_file'],
-    container: config['container']
+    software: SOFTWARE_ENV
     log: "logs/index.log"
     shell:
         """
@@ -65,7 +65,7 @@ rule align:
     resources:
         slurm_partition=get_slurm_partition,
         runtime=get_runtime,
-    container: config['container']
+    software: SOFTWARE_ENV
     log: "logs/align/{sample}.log"
     shell:
         """

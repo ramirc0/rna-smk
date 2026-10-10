@@ -1,5 +1,8 @@
 import polars as pl
 
+# The workspace path is relative to the rule file. Every rule file sits in rules/.
+SOFTWARE_ENV = pixi(workspace="../envs", env=config["pixi_env"], locked=True)
+
 metadata = pl.read_csv(config['input_files']["metadata"], separator="\t", comment_prefix="#")
 
 samples = metadata["Sample"].to_list()

@@ -27,7 +27,7 @@ rule bam_to_signals:
         sample=lambda wildcards: wildcards.sample,
         is_stranded=config['sequencing']['is_stranded'],
         outdir=lambda wildcards: f"results/signals/{wildcards.sample}"
-    container: config['container']
+    software: SOFTWARE_ENV
     log: "logs/signals/{sample}.log"
     shell:
         """

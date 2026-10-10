@@ -11,4 +11,4 @@ input_files:
   gtf_file: "jobs/2026-01-06/gencode.v49.basic.annotation.gtf" # Optional: Assert not GZIPPED
   reference_fasta: "jobs/2026-01-06/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta" # Optional: Assert not GZIPPED
 
-container: docker://clarity001/rna-smk:latest
+pixi_env: default

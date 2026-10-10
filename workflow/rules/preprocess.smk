@@ -7,7 +7,7 @@ rule fastp:
     params:
         r1=lambda wildcards: READ_LOOKUP[wildcards.sample][0],
         r2=lambda wildcards: READ_LOOKUP[wildcards.sample][1],
-    container: "docker://clarity001/rna-smk:latest"
+    software: SOFTWARE_ENV
     log: "logs/processed/{sample}.log"
     shell:
         """

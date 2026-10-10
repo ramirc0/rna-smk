@@ -17,16 +17,16 @@ This pipeline expects paired-end (or single-end) FASTQ files as input. You will 
 
 This pipeline requires the following dependencies:
 
-- [`conda` (preferably `mamba`)](https://github.com/conda-forge/miniforge)
-- [`singularity`](https://docs.sylabs.io/guides/3.0/user-guide/installation.html)
+- [`pixi`](https://pixi.sh)
 - (Optional) [`slurm`](https://slurm.schedmd.com/quickstart.html)
 
-To start, first setup the runtime environment:
+To start, enter the launcher environment:
 
 ```bash
-mamba env create --name=rna-smk --file=environments/rna-smk.yaml
-mamba activate rna-smk
+pixi shell
 ```
+
+Rules run in the pixi workspace `workflow/envs/`. Jobs install it on first use.
 
 ### Example Configfile
 
@@ -63,10 +63,10 @@ input_files:
 - `input_files.reference_fasta`: Path to the reference genome FASTA file. Must **not** be gzipped.
 
 ```yaml
-container: docker://clarity001/rna-smk:latest
+pixi_env: default
 ```
 
-- `container`: The Docker/Singularity container image used for most pipeline rules. This image bundles STAR, RSEM, samtools, fastp, and bigtools.
+- `pixi_env`: The environment of `workflow/envs/pixi.toml` that the rules use. It bundles STAR, RSEM, samtools, fastp, and bigtools.
 
 ### Defining Resources
 
