@@ -1,0 +1,35 @@
+# Local execution.
+software-deployment-method:
+  - pixi
+# Snakemake copies every env package here. pixi installs from its own cache.
+# One copy per user instead of one per workdir.
+software-deployment-cache-prefix: ~/.cache/snakemake/software
+
+# rsem_quant needs 44 threads, because RSEM output depends on -p.
+cores: 44
+printshellcmds: true
+rerun-incomplete: true
+keep-going: true
+show-failed-logs: true
+retries: 1
+benchmark-extended: true
+
+default-resources:
+  mem_mb: 8000
+  runtime: 30
+
+set-threads:
+  fastp: 8
+  index: 44
+  align: 44
+  bam_to_signals: 44
+  rsem_index: 44
+  rsem_quant: 44
+
+set-resources:              # tune from benchmarks/ TSVs after a real run
+  fastp: {mem_mb: 32000}
+  index: {mem_mb: 250000}
+  align: {mem_mb: 250000}
+  bam_to_signals: {mem_mb: 250000}
+  rsem_index: {mem_mb: 128000}
+  rsem_quant: {mem_mb: 128000}

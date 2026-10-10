@@ -1,68 +1,69 @@
-from pathlib import Path
+# RSEM reference and gene and isoform quantification.
 
+
+# Run-independent: built once under results/refs/, reused across runs.
 rule rsem_index:
+    input:
+        fasta=REFERENCE_FASTA,
+        gtf=REFERENCE_GTF,
     output:
-        signal="results/rsem_index.continue",
-        index_dir=directory("results/rsem_index")
+        RSEM_INDEX_FILES,
     params:
-        fasta=config['input_files']['reference_fasta'],
-        gtf=config['input_files']['gtf_file'],
-        transcript_to_gene_map=(f"--transcript-to-gene-map {Path(config['input_files']['knownIsoforms']).name}", config['input_files']['knownIsoforms']) if config['input_files'].get('knownIsoforms') else "",
-        rsem_index_prefix="results/rsem_index/rsem"
-    software: SOFTWARE_ENV
-    log: "logs/rsem_index.log"
+        prefix=RSEM_INDEX,
+    log:
+        f"{LOGDIR}/rsem_index.txt",
+    benchmark:
+        f"{BENCHDIR}/rsem_index.tsv",
+    software:
+        SOFTWARE_ENV
     shell:
-        """
-        exec >> {log} 2>&1
+        r"""
+        exec &> >(tee {log:q})
 
-        echo "$(date): Creating rsem index"
         ulimit -n 65536
-        echo "$(date): ulimit set to $(ulimit -n)"
-
-        mkdir -p results/rsem_index
 
         rsem-prepare-reference \
-            --gtf {params.gtf} \
-            -p {resources.threads} \
-            {params.fasta} \
-            {params.rsem_index_prefix}
-
-        echo "$(date): Finished creating rsem index"
-        touch {output.signal}
+            --gtf {input.gtf:q} \
+            -p {threads:q} \
+            {input.fasta:q} \
+            {params.prefix:q}
         """
 
+
+# RSEM's Gibbs sampling and credibility intervals depend on -p.
 rule rsem_quant:
     input:
-        signal=rules.rsem_index.output.signal,
-        index_dir=rules.rsem_index.output.index_dir,
-        anno_bam="results/align/{sample}/{sample}_anno.bam",
+        index=RSEM_INDEX_FILES,
+        anno_bam=f"{OUTDIR}/{{sample}}/align/{{sample}}_anno.bam",
     output:
-        signal="results/rsem_quant/{sample}.continue",
+        genes=f"{OUTDIR}/{{sample}}/rsem_quant/{{sample}}.genes.results",
+        isoforms=f"{OUTDIR}/{{sample}}/rsem_quant/{{sample}}.isoforms.results",
+        genes_detected=f"{OUTDIR}/{{sample}}/rsem_quant/{{sample}}_no_genes_detected.json",
     params:
-        outprefix=lambda wildcards: f"results/rsem_quant/{wildcards.sample}",
-        endedness=config['sequencing']['endedness'],
-        strand_direction=config['sequencing']['strand_direction'],
-        rsem_seed=config['sequencing']['rsem_seed']
-    software: SOFTWARE_ENV
-    log: "logs/rsem_quant/{sample}.log"
+        index=RSEM_INDEX,
+        outprefix=lambda w: f"{OUTDIR}/{w.sample}/rsem_quant/{w.sample}",
+        endedness=lambda w: config["sequencing"]["endedness"],
+        strand_direction=lambda w: config["sequencing"]["strand_direction"],
+        rsem_seed=lambda w: config["sequencing"]["rsem_seed"],
+    log:
+        f"{LOGDIR}/rsem_quant/{{sample}}.txt",
+    benchmark:
+        f"{BENCHDIR}/rsem_quant/{{sample}}.tsv",
+    software:
+        SOFTWARE_ENV
     shell:
-        """
-        exec >> {log} 2>&1
-        
-        echo "$(date): Running rsem quantification"
+        r"""
+        exec &> >(tee {log:q})
+
         ulimit -n 65536
-        echo "$(date): ulimit set to $(ulimit -n)"
 
         python workflow/scripts/rsem.py \
-            --rsem_index {input.index_dir}/rsem \
-            --anno_bam {input.anno_bam} \
-            --endedness {params.endedness} \
-            --read_strand {params.strand_direction} \
-            --rnd_seed {params.rsem_seed} \
-            --ncpus {resources.threads} \
-            --mem_mb {resources.mem_mb} \
-            --outprefix {params.outprefix}
-
-        echo "$(date): Finished rsem quantification"
-        touch {output.signal}
+            --rsem_index {params.index:q} \
+            --anno_bam {input.anno_bam:q} \
+            --endedness {params.endedness:q} \
+            --read_strand {params.strand_direction:q} \
+            --rnd_seed {params.rsem_seed:q} \
+            --ncpus {threads:q} \
+            --mem_mb {resources.mem_mb:q} \
+            --outprefix {params.outprefix:q}
         """

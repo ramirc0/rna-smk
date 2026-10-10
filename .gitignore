@@ -1,24 +1,3 @@
-# User-defined
-jobs/
-logs/
-debug
-.test*
-*.simg
-release
-results
-scratch/
-ARCHIVED/
-.snakemake
-layout.txt
-pipeline.txt
-prototyping
-STARManual.*
-filter-indels
-MOHD_RESULTS_*
-old-pipeline.wdl
-rna-seq-pipeline
-RSEM-Quant-Manifest.txt
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -68,6 +47,7 @@ nosetests.xml
 coverage.xml
 *.cover
 *.py.cover
+*.lcov
 .hypothesis/
 .pytest_cache/
 cover/
@@ -115,7 +95,7 @@ ipython_config.py
 #   install all needed dependencies.
 # Pipfile.lock
 
-# UV
+# uv
 #   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
 #   This is especially recommended for binary packages to ensure reproducibility, and is more
 #   commonly ignored for libraries.
@@ -143,13 +123,14 @@ ipython_config.py
 # pixi.lock
 #   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
 #   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi
+.pixi/*
+!.pixi/config.toml
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
 
 # Celery stuff
-celerybeat-schedule
+celerybeat-schedule*
 celerybeat.pid
 
 # Redis
@@ -185,7 +166,7 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
+# mkdocs/Zensical documentation
 /site
 
 # mypy
@@ -216,11 +197,13 @@ cython_debug/
 .abstra/
 
 # Visual Studio Code
-#   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#   that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#   and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#   you could uncomment the following to ignore the entire vscode folder
+#   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore that
+#   can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+#   and can be added to the global gitignore or merged into this file. However, if you prefer, you
+#   could uncomment the following to ignore the entire vscode folder
 # .vscode/
+# Temporary file for partial code execution
+tempCodeRunnerFile.py
 
 # Ruff stuff:
 .ruff_cache/
@@ -235,3 +218,33 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Snakemake template
+logs
+results
+config/*.tsv
+!config/samples.example.tsv
+# copy from config.yaml.template, then edit
+config/config.yaml
+.snakemake
+scratch
+.conda
+resources
+benchmarks
+# Rule env workspaces that pixi installed in place
+workflow/envs/**/.pixi/
+
+# rna-smk
+jobs/
+debug
+*.simg
+release
+ARCHIVED/
+layout.txt
+pipeline.txt
+prototyping
+STARManual.*
+MOHD_RESULTS_*
+old-pipeline.wdl
+rna-seq-pipeline
+RSEM-Quant-Manifest.txt

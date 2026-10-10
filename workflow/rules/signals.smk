@@ -1,52 +1,38 @@
-def get_bam_to_signals_rule():
-    if config['sequencing']['is_stranded']:
-        return {
-            'output': {
-                'minus_all': "results/signals/{sample}/{sample}_genome_minusAll.bw",
-                'minus_unique': "results/signals/{sample}/{sample}_genome_minusUniq.bw",
-                'plus_all': "results/signals/{sample}/{sample}_genome_plusAll.bw",
-                'plus_unique': "results/signals/{sample}/{sample}_genome_plusUniq.bw",
-            }
-        }
-    else:
-        return {
-            'output': {
-                'unstranded_all': "results/signals/{sample}/{sample}_genome_all.bw",
-                'unstranded_unique': "results/signals/{sample}/{sample}_genome_uniq.bw",
-            }
-        }
+# Genome BAM to bigWig signal tracks.
+
 
 rule bam_to_signals:
     input:
-        chromsizes=rules.index.output.chromsizes,
-        genome_bam="results/align/{sample}/{sample}_genome.bam"
+        chromsizes=f"{STAR_INDEX}/chrNameLength.txt",
+        genome_bam=f"{OUTDIR}/{{sample}}/align/{{sample}}_genome.bam",
     output:
-        **get_bam_to_signals_rule()['output'],
-        signal="results/signals/{sample}/.continue",
+        SIGNAL_TRACKS,
     params:
-        sample=lambda wildcards: wildcards.sample,
-        is_stranded=config['sequencing']['is_stranded'],
-        outdir=lambda wildcards: f"results/signals/{wildcards.sample}"
-    software: SOFTWARE_ENV
-    log: "logs/signals/{sample}.log"
+        outdir=lambda w: f"{OUTDIR}/{w.sample}/signals",
+        is_stranded=lambda w: config["sequencing"]["is_stranded"],
+    log:
+        f"{LOGDIR}/bam_to_signals/{{sample}}.txt",
+    benchmark:
+        f"{BENCHDIR}/bam_to_signals/{{sample}}.tsv",
+    software:
+        SOFTWARE_ENV
     shell:
-        """
-        exec >> {log} 2>&1
-        ABS_LOG_PATH=$(realpath {log})
-        echo "$(date): Running bam to singal conversion"
-        
-        samtools sort -@ {resources.threads} -m 1G -o {params.outdir}/temp_sorted.bam {input.genome_bam}
+        r"""
+        exec &> >(tee {log:q})
+
+        samtools sort \
+            -@ {threads:q} \
+            -m 1G \
+            -o {params.outdir:q}/temp_sorted.bam \
+            {input.genome_bam:q}
 
         python workflow/scripts/bam_to_signals.py \
-            --threads {resources.threads} \
-            --output_dir {params.outdir} \
-            --bamfile {params.outdir}/temp_sorted.bam \
-            --chrom_sizes {input.chromsizes} \
-            --is_stranded {params.is_stranded} \
-            --bamroot {params.sample}_genome
-        
-        rm {params.outdir}/temp_sorted.bam
+            --threads {threads:q} \
+            --output_dir {params.outdir:q} \
+            --bamfile {params.outdir:q}/temp_sorted.bam \
+            --chrom_sizes {input.chromsizes:q} \
+            --is_stranded {params.is_stranded:q} \
+            --bamroot {wildcards.sample:q}_genome
 
-        echo "$(date): Finished bam to singal conversion"
-        touch {output.signal}
+        rm {params.outdir:q}/temp_sorted.bam
         """

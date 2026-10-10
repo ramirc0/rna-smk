@@ -1,24 +1,12 @@
-configfile: "config/config.yml"
-workdir: config["workdir"]
 
 include: "rules/common.smk"
 include: "rules/preprocess.smk"
-include: "rules/STAR_align.smk"
+include: "rules/align.smk"
 include: "rules/signals.smk"
 include: "rules/gene_quantification.smk"
 
-onstart:
-    print("\n--- Analysis started ---\n")
-onsuccess:
-    print("\n--- Workflow finished! ---\n")
-onerror:
-    print("\n--- An error occurred! ---\n")
 
 rule all:
     input:
-        expand(["results/processed/{sample}_R1.fastq.gz", "results/processed/{sample}_R2.fastq.gz"], sample=samples),
-        "results/index.continue",
-        expand("results/align/{sample}/.continue", sample=samples),
-        expand("results/signals/{sample}/.continue", sample=samples),
-        "results/rsem_index.continue",
-        expand("results/rsem_quant/{sample}.continue", sample=samples),
+        expand(SIGNAL_TRACKS, sample=SAMPLES),
+        expand(f"{OUTDIR}/{{sample}}/rsem_quant/{{sample}}.genes.results", sample=SAMPLES),
