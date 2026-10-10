@@ -1,146 +1,209 @@
-# RNA-seq Snakemake Pipeline
+# rna-smk
 
-## Overview
-
-Here we present a [snakemake](https://github.com/snakemake/snakemake.git) pipeline for RNA-seq preprocessing, alignment, signal generation, gene quantification, and quality control across multiple samples.
-
-> [!NOTE]
-> Alignment and quantification steps are adapted from the [ENCODE RNA-seq pipeline](https://github.com/ENCODE-DCC/rna-seq-pipeline). See individual script headers for attribution details.
-
-## Example Usage
-
-### Prerequisites
-
-This pipeline expects paired-end (or single-end) FASTQ files as input. You will need a metadata TSV file describing your samples and their corresponding read files (see [Example Configfile](#example-configfile) below).
-
-### Dependencies
-
-This pipeline requires the following dependencies:
-
-- [`pixi`](https://pixi.sh)
-- (Optional) [`slurm`](https://slurm.schedmd.com/quickstart.html)
-
-To start, enter the launcher environment:
-
-```bash
-pixi shell
-```
-
-Rules run in the pixi workspace `workflow/envs/`. Jobs install it on first use.
-
-### Example Configfile
-
-For a complete example, see [config/config.yml](config/config.yml). From this file you'll want to pay attention to the following sections:
-
-```yaml
-workdir: "/path/to/rna-smk"
-```
-
-- `workdir`: The absolute path to the working directory for the pipeline. All relative paths in the config are resolved from here.
-
-```yaml
-sequencing:
-  endedness: "paired"
-  is_stranded: True
-  strand_direction: "reverse"
-  rsem_seed: 42
-```
-
-- `sequencing.endedness`: Whether the library is `"paired"` or `"single"` ended.
-- `sequencing.is_stranded`: Whether the library is stranded (`True` or `False`). This controls whether strand-specific signal tracks (bigWig files) are generated.
-- `sequencing.strand_direction`: The strandedness of the library. Must be one of `"forward"`, `"reverse"`, or `"unstranded"`. If you are unsure, the included utility script `workflow/scripts/get_strandedness.py` can infer strandedness from a BAM file.
-- `sequencing.rsem_seed`: Random seed for RSEM quantification reproducibility.
-
-```yaml
-input_files:
-  metadata: "jobs/2026-01-06/metadata.tsv"
-  gtf_file: "jobs/2026-01-06/gencode.v49.basic.annotation.gtf"
-  reference_fasta: "jobs/2026-01-06/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-```
-
-- `input_files.metadata`: Path to the sample metadata file. This is a tab-delimited file with a header containing at least three columns: `Sample`, `R1`, and `R2`. Lines beginning with `#` are treated as comments. `Sample` values *must be unique*. `R1` and `R2` contain absolute paths to the corresponding FASTQ files.
-- `input_files.gtf_file`: Path to the gene annotation GTF file. Must **not** be gzipped.
-- `input_files.reference_fasta`: Path to the reference genome FASTA file. Must **not** be gzipped.
-
-```yaml
-pixi_env: default
-```
-
-- `pixi_env`: The environment of `workflow/envs/pixi.toml` that the rules use. It bundles STAR, RSEM, samtools, fastp, and bigtools.
-
-### Defining Resources
-
-All resource definitions for rules are located in [profile/slurm/config.yaml](profile/slurm/config.yaml).
-
-```yaml
-  align:
-    slurm_extra: "--cpu-freq=High-High:Performance"
-    threads: 44
-    cpus_per_task: 44
-    mem_gb: 250
-    mem_mb: 250000
-```
-
-In this instance, we are requesting a job on a SLURM cluster with 44 threads, 44 CPUs per task, and 250 GB of memory.
-
-These resource definitions are specific to the Weng Lab's SLURM cluster. If you are running the pipeline on your own cluster, you'll need to adjust these values accordingly. We recommend consulting the [snakemake-executor-plugin-slurm documentation](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html) for further information.
-
-### Running the Pipeline
-
-With the hard part out of the way, you can now run the pipeline:
-
-```bash
-snakemake --workflow-profile profile/slurm
-```
+A [Snakemake](https://github.com/snakemake/snakemake) pipeline for paired-end
+RNA-seq. Reads are trimmed and aligned with STAR. The alignments feed bigWig
+signal tracks, RSEM gene and isoform quantification, strandedness inference and
+MAD QC between replicates.
 
 > [!NOTE]
-> It is recommended that you run the pipeline in dry run mode first (add the `-n` flag). Also note that `snakemake` must be ran in the root of this repository.
+> Alignment, signal and quantification steps come from the
+> [ENCODE RNA-seq pipeline](https://github.com/ENCODE-DCC/rna-seq-pipeline).
+> The script headers give attribution.
 
-This will run the pipeline and produce all outputs to a directory `results`.
+## Layout
 
-### Pipeline Steps
+```
+config/
+  config.yaml.template   parameters + paths; copy to config.yaml (gitignored)
+  samples.example.tsv    one row per sample: sample_id, r1, r2, [group]
+workflow/
+  Snakefile              includes the rule files, defines rule all
+  rules/
+    common.smk           config, sample sheet, path constants
+    preprocess.smk       fastp
+    align.smk            STAR index and alignment
+    signals.smk          bigWig signal tracks
+    gene_quantification.smk  RSEM index and quantification
+    qc.smk               gene model, strandedness, MAD QC
+  scripts/               argparse scripts, each with build_parser() + main()
+  envs/pixi.toml         production rule env (pixi workspace)
+  envs/qc/pixi.toml      QC rule env (a separate pixi workspace)
+profiles/
+  local/config.yaml      local execution
+  slurm/config.yaml      SLURM (per-rule resources, retried with more memory)
+pixi.toml                launcher env + lint task
+pyproject.toml           ruff + numpydoc config
+```
 
-The pipeline executes the following steps in order:
+## Running
 
-1. **Preprocessing** (`fastp`): Adapter trimming and quality filtering of raw FASTQ files.
-2. **Indexing** (`index`): Builds a STAR genome index, with splice junction annotation from the provided GTF.
-3. **Alignment** (`align`): Aligns reads to the genome and generates both a genome-coordinate BAM and a transcriptome-coordinate (annotation) BAM. When using STAR, alignment retries up to 3 times with progressively longer SLURM partitions.
-4. **Signal Generation** (`bam_to_signals`): Converts genome BAMs to bigWig signal tracks. Produces strand-specific tracks (plus/minus, all/unique) for stranded libraries, or unstranded tracks otherwise.
-5. **RSEM Indexing** (`rsem_index`): Builds an RSEM reference from the genome FASTA and GTF.
-6. **RSEM Quantification** (`rsem_quant`): Quantifies gene and isoform expression from the annotation BAM using RSEM.
+```bash
+cp config/config.yaml.template config/config.yaml  # then edit
+cp config/samples.example.tsv config/samples.tsv   # then edit
+pixi shell                                         # launcher env
+snakemake -n -p --profile profiles/local           # dry run
+snakemake --profile profiles/local                 # local
+snakemake --profile profiles/slurm                 # SLURM
+```
 
-### Outputs
+Snakemake MUST run from the repository root. The SLURM profile holds Weng Lab
+partitions. Adapt them for another cluster with the
+[SLURM executor docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html).
+Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
 
-The pipeline produces results organized under the `results/` directory:
+`rsem_quant` MUST run with 44 threads. RSEM's Gibbs sampling and credibility
+intervals change with `-p`, so another thread count gives other numbers. The
+local profile sets `cores: 44` for this reason.
 
-| Directory | Key Outputs |
+## Inputs
+
+The sample sheet is a TSV with a header row. `sample_id` names the sample. `r1`
+and `r2` are its raw paired-end FASTQs. The optional `group` column pairs
+replicates for MAD QC. Lines that start with `#` are comments. Each `sample_id`
+MUST be unique.
+
+The references live in `resources/` (gitignored). Neither may be gzipped.
+
+- the GRCh38 FASTA, no-alt analysis set
+- a GENCODE GTF, e.g. `gencode.v49.basic.annotation.gtf`
+
+## Configuration
+
+| Key | Meaning |
 |---|---|
-| `results/processed/` | Trimmed FASTQs, HTML and JSON QC reports from fastp |
-| `results/index/` | STAR genome index, chromosome sizes file |
-| `results/align/{sample}/` | Genome-coordinate BAM, transcriptome-coordinate (annotation) BAM, flagstat JSON, STAR `Log.final.out` |
-| `results/signals/{sample}/` | Strand-specific bigWig signal tracks (plus/minus, all/unique) or unstranded bigWig tracks |
-| `results/rsem_index/` | RSEM reference index |
-| `results/rsem_quant/{sample}` | Gene and isoform quantification tables (`.genes.results`, `.isoforms.results`), gene detection JSON |
+| `samples` | Sample sheet path. |
+| `outdir` | Results root. |
+| `run_id` | Run name. Outputs go under `<outdir>/<run_id>/`. |
+| `pixi_env` | Environment of `workflow/envs/pixi.toml` that the production rules use. |
+| `references.fasta` | Reference genome FASTA. |
+| `references.gtf` | Gene annotation GTF, for STAR, RSEM and the strandedness gene model. |
+| `sequencing.endedness` | `paired` or `single`. Only `paired` runs (see Known issues). |
+| `sequencing.is_stranded` | Write plus and minus strand signal tracks. |
+| `sequencing.strand_direction` | `forward`, `reverse` or `unstranded`. Sets RSEM's `--forward-prob`. |
+| `sequencing.rsem_seed` | RSEM random seed. |
 
-### What if I cannot run on a SLURM cluster?
+## Steps
 
-If you cannot run the pipeline on a SLURM cluster, you can run it locally. However, this is not a supported use case.
+Preprocessing and alignment, in `preprocess.smk` and `align.smk`:
 
-To run locally, go to the [workflow/Snakefile](workflow/Snakefile) and add a `localrules` directive listing the rules you wish to run on the local machine. Note that alignment and indexing steps are memory-intensive and may not be feasible on a local workstation.
+- `fastp` trims adapters and low-quality bases. It writes HTML and JSON reports.
+- `index` builds the STAR genome index with the GTF's splice junctions. Its
+  `sjdbOverhang` is one less than the shortest read in the first sample's raw R1.
+- `align` runs STAR with the ENCODE parameters. It writes a coordinate-sorted
+  genome BAM and an RSEM-ready transcriptome BAM (`_anno.bam`), with flagstat
+  and STAR log reports as text and JSON.
 
-### Utility Scripts
+Signal tracks, in `signals.smk`:
 
-The `workflow/scripts/` directory contains a utility script:
+- `bam_to_signals` runs STAR's `inputAlignmentsFromBAM` mode on the genome BAM.
+  It writes bigWigs of unique and of all reads, one per strand for stranded
+  libraries.
 
-- `get_strandedness.py`: Infers library strandedness from a BAM file using RSeQC's `infer_experiment.py`. Returns `"forward"`, `"reverse"`, or `"unstranded"` to stdout.
+Quantification, in `gene_quantification.smk`:
+
+- `rsem_index` builds the RSEM reference from the FASTA and GTF.
+- `rsem_quant` runs `rsem-calculate-expression` with credibility intervals. It
+  counts the genes above 1 TPM.
+
+QC, in `qc.smk`:
+
+- `gene_model` converts the GTF to a BED12 gene model with the UCSC tools.
+- `strandedness` runs RSeQC's `infer_experiment.py` on the genome BAM. A
+  binomial test on the strand fractions gives `forward`, `reverse` or
+  `unstranded`. The result is a report only. `sequencing.strand_direction`
+  still drives RSEM and the signal tracks.
+- `mad_qc` compares the gene FPKMs of two samples in the same `group`. It writes
+  the MAD and the SD of their log2 ratios, their Pearson correlation and an MA
+  plot.
+
+## Outputs
+
+Each sample writes to `<outdir>/<run_id>/<sample>/<step>/`. The STAR index,
+RSEM index and gene model do not depend on the run. They go to
+`<outdir>/refs/`. Logs and benchmarks mirror the run layout under
+`logs/<run_id>/` and `benchmarks/<run_id>/`.
+
+| Step directory | Key outputs |
+|---|---|
+| `processed/` | Trimmed FASTQs, HTML and JSON reports |
+| `align/` | Genome BAM, transcriptome BAM, flagstat TXT and JSON, STAR `Log.final.out` and JSON |
+| `signals/` | bigWigs: `plusAll`, `plusUniq`, `minusAll`, `minusUniq`, or `all` and `uniq` |
+| `rsem_quant/` | `.genes.results`, `.isoforms.results`, genes-detected JSON |
+| `strandedness/` | `forward`, `reverse` or `unstranded` in a TXT |
+| `mad_qc/` | One JSON and MA plot (SVG, PNG) per other sample in the group |
+
+## Environment
+
+The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
+for pixi deployment and SLURM. The rule envs are two more pixi workspaces.
+`workflow/envs/` runs the production rules. Its tool versions match
+`clarity001/rna-smk:latest` as cached on 2025-07-10, the image that produced the
+production results. `workflow/envs/qc/` runs the QC rules. Each `pixi.lock` pins
+every package. pixi MUST be on `PATH`. Jobs install the envs on first use.
+
+Add a dependency with `pixi add <pkg>` in the workspace's directory. After a
+hand edit, run `pixi lock` there (rules use `locked=True`). Any change to a
+workspace's manifest or lock reruns every rule that uses it. So does moving the
+workdir, because the env hash includes the workspace's absolute path.
+
+## Conventions
+
+The workflow follows the
+[Nextstrain Snakemake style guide](https://docs.nextstrain.org/en/latest/reference/snakemake-style-guide.html)
+and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snakefiles/best_practices.html):
+
+- No `run:` blocks. Custom logic lives in `workflow/scripts/`, called from `shell:`.
+- Raw, triple-quoted `shell` blocks (`r"""`), one option per line.
+- Every interpolation uses `:q` quoting.
+- Config reaches `shell` through `params:` (a `lambda`), never directly.
+- `input:` and `output:` are literal path strings. All paths are relative.
+- Rules tee logs to file and terminal (`exec &> >(tee {log:q})`).
+- Every rule has `log:` and `benchmark:`. Each names its pixi env in `software:`.
+- Plots use [poikilos](https://github.com/ramirc0/poikilos) with the `plain`
+  theme. `pk.save_figure()` writes the SVG and PNG pair. Rules declare both.
+- Docstrings follow numpydoc. `pixi run lint` checks the scripts with ruff and
+  `numpydoc lint`. Neither tool parses `.smk` files.
+
+## Known issues
+
+These legacy bugs stay to keep outputs identical to the production results.
+A fix changes outputs.
+
+- `bam_to_signals.py` parses `--is_stranded` with `type=bool`, so the string
+  `False` is true. With `is_stranded: false` it still writes stranded tracks,
+  and the rule fails on missing outputs.
+- `align.py` and `bam_to_signals.py` ignore the exit codes of STAR,
+  `convert-sam-for-rsem`, `bedtools sort` and `bigtools`. A failed step can
+  leave a bad output in a job that reports success.
+- The `align` rule's `samtools quickcheck` only logs. A corrupt BAM does not
+  fail the job.
+- `index` takes `sjdbOverhang` from seqkit's sixth column. That is the minimum
+  read length of the first sample's raw R1, not the average.
+- `fastp` always passes R2, so `endedness: single` cannot run.
+- `align.py` passes `--outSAMheaderCommentFile COfile.txt`, a path relative to
+  the working directory. A `COfile.txt` in the repository root adds `@CO`
+  lines to every BAM.
+- `bam_to_signals.py` names sorted bedGraphs with `str.replace('.bg', ...)` on
+  the full path. A `run_id` or sample ID that contains `.bg` breaks it.
+- `get_strandedness.py` runs its binomial test on millions of reads, so almost
+  any imbalance counts as stranded. Its regexes match only paired-end output.
+- `mad_qc.py` takes the upper middle value as the median of an even count. Its
+  `Standard_deviation` is the root mean square of the log ratios, not a
+  centered SD. Both follow the Rust `madqc` tool it replaces.
 
 ## References
 
-> Köster, J., Mölder, F., Jablonski, K. P., Letcher, B., Hall, M. B., Tomkins-Tinch, C. H., Sochat, V., Forster, J., Lee, S., Twardziok, S. O., Kanitz, A., Wilm, A., Holtgrewe, M., Rahmann, S., & Nahnsen, S. _Sustainable data analysis with Snakemake_. F1000Research, 10:33, 10, 33, **2021**. https://doi.org/10.12688/f1000research.29032.2.
+Chen, Shifu. 2025. "Fastp 1.0: An Ultra-Fast All-Round Tool for FASTQ Data Quality Control and Preprocessing." iMeta 4 (5): e70078. https://doi.org/10.1002/imt2.70078.
 
-> Dobin, A., Davis, C. A., Schlesinger, F., Drenkow, J., Zaleski, C., Jha, S., Batut, P., Chaisson, M., & Gingeras, T. R. _STAR: ultrafast universal RNA-seq aligner_. Bioinformatics, 29(1), 15–21, **2013**. https://doi.org/10.1093/bioinformatics/bts635.
+Danecek, Petr, James K. Bonfield, Jennifer Liddle, et al. 2021. "Twelve Years of SAMtools and BCFtools." GigaScience 10 (2): giab008. https://doi.org/10.1093/gigascience/giab008.
 
-> Li, B. & Dewey, C. N. _RSEM: accurate transcript quantification from RNA-Seq data with or without a reference genome_. BMC Bioinformatics, 12, 323, **2011**. https://doi.org/10.1186/1471-2105-12-323.
+Dobin, Alexander, Carrie A. Davis, Felix Schlesinger, et al. 2013. "STAR: Ultrafast Universal RNA-Seq Aligner." Bioinformatics 29 (1): 15–21. https://doi.org/10.1093/bioinformatics/bts635.
+
+Li, Bo, and Colin N. Dewey. 2011. "RSEM: Accurate Transcript Quantification from RNA-Seq Data with or without a Reference Genome." BMC Bioinformatics 12: 323. https://doi.org/10.1186/1471-2105-12-323.
+
+Mölder, Felix, Kim Philipp Jablonski, Brice Letcher, et al. 2021. "Sustainable Data Analysis with Snakemake." F1000Research 10 (January): 33. https://doi.org/10.12688/f1000research.29032.2.
+
+Wang, Liguo, Shengqin Wang, and Wei Li. 2012. "RSeQC: Quality Control of RNA-Seq Experiments." Bioinformatics 28 (16): 2184–85. https://doi.org/10.1093/bioinformatics/bts356.
 
 ## Questions
 
