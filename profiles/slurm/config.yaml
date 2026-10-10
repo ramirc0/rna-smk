@@ -26,6 +26,9 @@ set-threads:
   bam_to_signals: 44
   rsem_index: 44
   rsem_quant: 44
+  gene_model: 1
+  strandedness: 1
+  mad_qc: 1
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
   fastp:

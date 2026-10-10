@@ -4,9 +4,20 @@ include: "rules/preprocess.smk"
 include: "rules/align.smk"
 include: "rules/signals.smk"
 include: "rules/gene_quantification.smk"
+include: "rules/qc.smk"
 
 
 rule all:
     input:
         expand(SIGNAL_TRACKS, sample=SAMPLES),
         expand(f"{OUTDIR}/{{sample}}/rsem_quant/{{sample}}.genes.results", sample=SAMPLES),
+        expand(f"{OUTDIR}/{{sample}}/strandedness/{{sample}}.txt", sample=SAMPLES),
+        expand(
+            [
+                f"{OUTDIR}/{{sample}}/mad_qc/{{other}}.json",
+                f"{OUTDIR}/{{sample}}/mad_qc/{{other}}.svg",
+            ],
+            zip,
+            sample=[sample for sample, _ in MAD_QC_PAIRS],
+            other=[other for _, other in MAD_QC_PAIRS],
+        ),
