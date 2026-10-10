@@ -1,0 +1,24 @@
+[workspace]
+name = "rna-smk-envs"
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+
+# Versions match clarity001/rna-smk:latest as cached on 2025-07-10, the image
+# behind the production results. Two pins cannot match on bioconda. Every
+# bedtools 2.30.0 build needs zlib <1.3, which samtools, STAR and RSEM reject.
+# STAR 2.7.11b and RSEM 1.3.3 need htslib >=1.22.1.
+[dependencies]
+python = "3.12.*"
+bedtools = "==2.31.1"
+bigtools = "==0.5.6"
+fastp = "==1.0.1"
+htslib = "1.22.*"
+rsem = "==1.3.3"
+samtools = "==1.22"
+seqkit = "==2.10.0"
+star = "==2.7.11b"
+numpy = "==2.3.1"
+pandas = "==2.3.1"
+
+[pypi-dependencies]
+qc-utils = "==20.9.1"
