@@ -53,10 +53,9 @@ rule rsem_quant:
         ulimit -n 65536
         echo "$(date): ulimit set to $(ulimit -n)"
 
-        workflow/rules/scripts/rsem.py \
+        python workflow/scripts/rsem.py \
             --rsem_index {input.index_dir}/rsem \
             --anno_bam {input.anno_bam} \
-            --logfile {log} \
             --endedness {params.endedness} \
             --read_strand {params.strand_direction} \
             --rnd_seed {params.rsem_seed} \

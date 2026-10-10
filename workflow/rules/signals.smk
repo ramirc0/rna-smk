@@ -37,8 +37,7 @@ rule bam_to_signals:
         
         samtools sort -@ {resources.threads} -m 1G -o {params.outdir}/temp_sorted.bam {input.genome_bam}
 
-        workflow/rules/scripts/bam_to_signals.py \
-            --logfile {log} \
+        python workflow/scripts/bam_to_signals.py \
             --threads {resources.threads} \
             --output_dir {params.outdir} \
             --bamfile {params.outdir}/temp_sorted.bam \

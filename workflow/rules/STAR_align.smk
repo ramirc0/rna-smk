@@ -74,14 +74,14 @@ rule align:
         ulimit -n 65536
         echo "$(date): ulimit set to $(ulimit -n)"
 
-        workflow/rules/scripts/align.py \
+        python workflow/scripts/align.py \
             --output_dir {output.outdir} \
-            --fastqs_R1 {input.r1} \
-            --fastqs_R2 {input.r2} \
+            --fastqs_r1 {input.r1} \
+            --fastqs_r2 {input.r2} \
             --bamroot {wildcards.sample} \
             --indexdir {input.index_dir} \
             --endedness {params.endedness} \
-            --ramGB {resources.mem_gb} \
+            --ram_gb {resources.mem_gb} \
             --ncpus {resources.threads} 
         
         samtools quickcheck {output.genome_bam} {output.anno_bam} && \

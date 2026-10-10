@@ -1,14 +1,13 @@
-#!/usr/bin/env python3
+"""Run the RSEM quantification step of the ENCODE rna-seq-pipeline."""
 
 import argparse
 import json
 import logging
-import os
-import re
 import shlex
 import subprocess
-import pandas as pd
 from collections import OrderedDict
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -18,8 +17,7 @@ formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s: %(message
 consolehandler.setFormatter(formatter)
 logger.addHandler(consolehandler)
 
-RSEM_COMMAND = (
-    """
+RSEM_COMMAND = """
     rsem-calculate-expression --bam \
     --estimate-rspd \
     --calc-ci \
@@ -33,13 +31,42 @@ RSEM_COMMAND = (
     {resem_index} \
     {outprefix}
     """
-)
 
 
-def main(args):
+def build_parser():
+    """Build the rsem.py command-line parser.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        Parser for the rsem.py flags.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--rsem_index", type=str, help="path to rsem index")
+    parser.add_argument("--anno_bam", type=str, help="STAR alignment to annotation.")
+    parser.add_argument("--endedness", type=str, choices=["paired", "single"])
+    parser.add_argument(
+        "--read_strand", type=str, choices=["forward", "reverse", "unstranded"]
+    )
+    parser.add_argument("--rnd_seed", type=int, help="random seed", default=42)
+    parser.add_argument("--ncpus", type=int, help="number of cpus available")
+    parser.add_argument("--mem_mb", type=int, help="memory available in GB")
+    parser.add_argument("--outprefix", type=str, help="prefix for output files")
+    return parser
+
+
+def main(argv=None):
+    """Quantify with RSEM and count the genes above 1 TPM.
+
+    Parameters
+    ----------
+    argv : list of str, optional
+        Command-line arguments. Defaults to `sys.argv[1:]`.
+    """
+    args = build_parser().parse_args(argv)
     strand_to_fwd_prob = {"forward": 1, "unstranded": 0.5, "reverse": 0}
     gene_detection_threshold = 1
-    
+
     rsem_call = shlex.split(
         RSEM_COMMAND.format(
             rnd_seed=args.rnd_seed,
@@ -49,12 +76,12 @@ def main(args):
             paired_end="--paired-end" if args.endedness == "paired" else "",
             anno_bam=args.anno_bam,
             resem_index=args.rsem_index,
-            outprefix=args.outprefix
+            outprefix=args.outprefix,
         )
     )
     logger.info("Running RSEM command %s", " ".join(rsem_call))
     subprocess.check_call(rsem_call)
-    
+
     quant_tsv = str(args.outprefix) + ".genes.results"
     quants = pd.read_csv(quant_tsv, sep="\t", usecols=["TPM"])
     no_genes_detected = sum(quants["TPM"] > gene_detection_threshold)
@@ -66,16 +93,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--rsem_index", type=str, help="path to rsem index")
-    parser.add_argument("--anno_bam", type=str, help="STAR alignment to annotation.")
-    parser.add_argument("--logfile", type=str, help="path to log file")
-    parser.add_argument("--endedness", type=str, choices=["paired", "single"])
-    parser.add_argument("--read_strand", type=str, choices=["forward", "reverse", "unstranded"])
-    parser.add_argument("--rnd_seed", type=int, help="random seed", default=42)
-    parser.add_argument("--ncpus", type=int, help="number of cpus available")
-    parser.add_argument("--mem_mb", type=int, help="memory available in GB")
-    parser.add_argument("--outprefix", type=str, help="prefix for output files")
-    args = parser.parse_args()
-    
-    main(args)
+    main()

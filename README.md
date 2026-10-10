@@ -48,7 +48,7 @@ sequencing:
 
 - `sequencing.endedness`: Whether the library is `"paired"` or `"single"` ended.
 - `sequencing.is_stranded`: Whether the library is stranded (`True` or `False`). This controls whether strand-specific signal tracks (bigWig files) are generated.
-- `sequencing.strand_direction`: The strandedness of the library. Must be one of `"forward"`, `"reverse"`, or `"unstranded"`. If you are unsure, the included utility script `workflow/rules/scripts/get-strandedness.py` can infer strandedness from a BAM file.
+- `sequencing.strand_direction`: The strandedness of the library. Must be one of `"forward"`, `"reverse"`, or `"unstranded"`. If you are unsure, the included utility script `workflow/scripts/get_strandedness.py` can infer strandedness from a BAM file.
 - `sequencing.rsem_seed`: Random seed for RSEM quantification reproducibility.
 
 ```yaml
@@ -130,9 +130,9 @@ To run locally, go to the [workflow/Snakefile](workflow/Snakefile) and add a `lo
 
 ### Utility Scripts
 
-The `workflow/rules/scripts/` directory contains a utility script:
+The `workflow/scripts/` directory contains a utility script:
 
-- `get-strandedness.py`: Infers library strandedness from a BAM file using RSeQC's `infer_experiment.py`. Returns `"forward"`, `"reverse"`, or `"unstranded"` to stdout.
+- `get_strandedness.py`: Infers library strandedness from a BAM file using RSeQC's `infer_experiment.py`. Returns `"forward"`, `"reverse"`, or `"unstranded"` to stdout.
 
 ## References
 
