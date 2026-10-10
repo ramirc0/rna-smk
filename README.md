@@ -34,11 +34,9 @@ For a complete example, see [config/config.yml](config/config.yml). From this fi
 
 ```yaml
 workdir: "/path/to/rna-smk"
-aligner: "STAR"
 ```
 
 - `workdir`: The absolute path to the working directory for the pipeline. All relative paths in the config are resolved from here.
-- `aligner`: The aligner to use. Must be one of `"STAR"` or `"HISAT2"`.
 
 ```yaml
 sequencing:
@@ -68,7 +66,7 @@ input_files:
 container: docker://clarity001/rna-smk:latest
 ```
 
-- `container`: The Docker/Singularity container image used for most pipeline rules. This image bundles STAR, HISAT2, RSEM, samtools, fastp, bigtools, and mudskipper.
+- `container`: The Docker/Singularity container image used for most pipeline rules. This image bundles STAR, RSEM, samtools, fastp, and bigtools.
 
 ### Defining Resources
 
@@ -105,7 +103,7 @@ This will run the pipeline and produce all outputs to a directory `results`.
 The pipeline executes the following steps in order:
 
 1. **Preprocessing** (`fastp`): Adapter trimming and quality filtering of raw FASTQ files.
-2. **Indexing** (`index`): Builds a genome index using STAR or HISAT2 (depending on the configured aligner), with splice junction annotation from the provided GTF.
+2. **Indexing** (`index`): Builds a STAR genome index, with splice junction annotation from the provided GTF.
 3. **Alignment** (`align`): Aligns reads to the genome and generates both a genome-coordinate BAM and a transcriptome-coordinate (annotation) BAM. When using STAR, alignment retries up to 3 times with progressively longer SLURM partitions.
 4. **Signal Generation** (`bam_to_signals`): Converts genome BAMs to bigWig signal tracks. Produces strand-specific tracks (plus/minus, all/unique) for stranded libraries, or unstranded tracks otherwise.
 5. **RSEM Indexing** (`rsem_index`): Builds an RSEM reference from the genome FASTA and GTF.
@@ -118,8 +116,8 @@ The pipeline produces results organized under the `results/` directory:
 | Directory | Key Outputs |
 |---|---|
 | `results/processed/` | Trimmed FASTQs, HTML and JSON QC reports from fastp |
-| `results/index/` | Genome index (STAR or HISAT2), chromosome sizes file |
-| `results/align/{sample}/` | Genome-coordinate BAM, transcriptome-coordinate (annotation) BAM, flagstat JSON, STAR `Log.final.out` or HISAT2 alignment summary |
+| `results/index/` | STAR genome index, chromosome sizes file |
+| `results/align/{sample}/` | Genome-coordinate BAM, transcriptome-coordinate (annotation) BAM, flagstat JSON, STAR `Log.final.out` |
 | `results/signals/{sample}/` | Strand-specific bigWig signal tracks (plus/minus, all/unique) or unstranded bigWig tracks |
 | `results/rsem_index/` | RSEM reference index |
 | `results/rsem_quant/{sample}` | Gene and isoform quantification tables (`.genes.results`, `.isoforms.results`), gene detection JSON |
@@ -132,18 +130,15 @@ To run locally, go to the [workflow/Snakefile](workflow/Snakefile) and add a `lo
 
 ### Utility Scripts
 
-The `workflow/rules/scripts/` directory contains several utility scripts:
+The `workflow/rules/scripts/` directory contains a utility script:
 
 - `get-strandedness.py`: Infers library strandedness from a BAM file using RSeQC's `infer_experiment.py`. Returns `"forward"`, `"reverse"`, or `"unstranded"` to stdout.
-- `filter-indels.py`: Filters out read pairs containing insertions or deletions from a BAM file. Used in the HISAT2 alignment workflow.
 
 ## References
 
 > Köster, J., Mölder, F., Jablonski, K. P., Letcher, B., Hall, M. B., Tomkins-Tinch, C. H., Sochat, V., Forster, J., Lee, S., Twardziok, S. O., Kanitz, A., Wilm, A., Holtgrewe, M., Rahmann, S., & Nahnsen, S. _Sustainable data analysis with Snakemake_. F1000Research, 10:33, 10, 33, **2021**. https://doi.org/10.12688/f1000research.29032.2.
 
 > Dobin, A., Davis, C. A., Schlesinger, F., Drenkow, J., Zaleski, C., Jha, S., Batut, P., Chaisson, M., & Gingeras, T. R. _STAR: ultrafast universal RNA-seq aligner_. Bioinformatics, 29(1), 15–21, **2013**. https://doi.org/10.1093/bioinformatics/bts635.
-
-> Kim, D., Paggi, J. M., Park, C., Bennett, C., & Salzberg, S. L. _Graph-based genome alignment and genotyping with HISAT2 and HISAT-genotype_. Nature Biotechnology, 37, 907–915, **2019**. https://doi.org/10.1038/s41587-019-0201-4.
 
 > Li, B. & Dewey, C. N. _RSEM: accurate transcript quantification from RNA-Seq data with or without a reference genome_. BMC Bioinformatics, 12, 323, **2011**. https://doi.org/10.1186/1471-2105-12-323.
 

@@ -1,5 +1,4 @@
 workdir: "/zata/zippy/ramirezc/rna-smk"
-aligner: "STAR"
 
 sequencing:
   endedness: "paired"  # Required: Enum("paired", "single")

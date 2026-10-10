@@ -8,10 +8,3 @@ FIRST_SAMPLE = read1[0]
 read2 = metadata["R2"].to_list()
 
 READ_LOOKUP = dict(zip(samples, zip(read1, read2)))
-
-STRAND_MAP = {
-    "reverse": "--rna-strandness RF",
-    "forward": "--rna-strandness FR",
-    "unstranded": "--rna-strandness unstranded"
-}
-

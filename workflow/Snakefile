@@ -3,10 +3,7 @@ workdir: config["workdir"]
 
 include: "rules/common.smk"
 include: "rules/preprocess.smk"
-if config["aligner"] == "STAR":
-    include: "rules/STAR_align.smk"
-elif config["aligner"] == "HISAT2":
-    include: "rules/HISAT2_align.smk"
+include: "rules/STAR_align.smk"
 include: "rules/signals.smk"
 include: "rules/gene_quantification.smk"
 
