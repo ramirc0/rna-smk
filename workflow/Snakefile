@@ -9,7 +9,6 @@ elif config["aligner"] == "HISAT2":
     include: "rules/HISAT2_align.smk"
 include: "rules/signals.smk"
 include: "rules/gene_quantification.smk"
-include: "rules/multiqc.smk"
 
 onstart:
     print("\n--- Analysis started ---\n")
@@ -17,8 +16,6 @@ onsuccess:
     print("\n--- Workflow finished! ---\n")
 onerror:
     print("\n--- An error occurred! ---\n")
-
-localrules: multiqc
 
 rule all:
     input:
@@ -28,4 +25,3 @@ rule all:
         expand("results/signals/{sample}/.continue", sample=samples),
         "results/rsem_index.continue",
         expand("results/rsem_quant/{sample}.continue", sample=samples),
-        "results/multiqc/multiqc_report.html"

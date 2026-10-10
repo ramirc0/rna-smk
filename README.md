@@ -58,19 +58,17 @@ input_files:
   metadata: "jobs/2026-01-06/metadata.tsv"
   gtf_file: "jobs/2026-01-06/gencode.v49.basic.annotation.gtf"
   reference_fasta: "jobs/2026-01-06/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-  multiqc_config: "jobs/2026-01-06/multiqc_config.yaml"
 ```
 
 - `input_files.metadata`: Path to the sample metadata file. This is a tab-delimited file with a header containing at least three columns: `Sample`, `R1`, and `R2`. Lines beginning with `#` are treated as comments. `Sample` values *must be unique*. `R1` and `R2` contain absolute paths to the corresponding FASTQ files.
 - `input_files.gtf_file`: Path to the gene annotation GTF file. Must **not** be gzipped.
 - `input_files.reference_fasta`: Path to the reference genome FASTA file. Must **not** be gzipped.
-- `input_files.multiqc_config`: (Optional) Path to a custom [MultiQC configuration file](https://multiqc.info/docs/getting_started/config/).
 
 ```yaml
 container: docker://clarity001/rna-smk:latest
 ```
 
-- `container`: The Docker/Singularity container image used for most pipeline rules. This image bundles STAR, HISAT2, RSEM, samtools, fastp, bigtools, mudskipper, and MultiQC.
+- `container`: The Docker/Singularity container image used for most pipeline rules. This image bundles STAR, HISAT2, RSEM, samtools, fastp, bigtools, and mudskipper.
 
 ### Defining Resources
 
@@ -112,7 +110,6 @@ The pipeline executes the following steps in order:
 4. **Signal Generation** (`bam_to_signals`): Converts genome BAMs to bigWig signal tracks. Produces strand-specific tracks (plus/minus, all/unique) for stranded libraries, or unstranded tracks otherwise.
 5. **RSEM Indexing** (`rsem_index`): Builds an RSEM reference from the genome FASTA and GTF.
 6. **RSEM Quantification** (`rsem_quant`): Quantifies gene and isoform expression from the annotation BAM using RSEM.
-7. **MultiQC** (`multiqc`): Aggregates QC metrics from fastp, STAR/HISAT2, and RSEM into a single HTML report.
 
 ### Outputs
 
@@ -126,7 +123,6 @@ The pipeline produces results organized under the `results/` directory:
 | `results/signals/{sample}/` | Strand-specific bigWig signal tracks (plus/minus, all/unique) or unstranded bigWig tracks |
 | `results/rsem_index/` | RSEM reference index |
 | `results/rsem_quant/{sample}` | Gene and isoform quantification tables (`.genes.results`, `.isoforms.results`), gene detection JSON |
-| `results/multiqc/` | Aggregated MultiQC HTML report and data directory |
 
 ### What if I cannot run on a SLURM cluster?
 
@@ -150,8 +146,6 @@ The `workflow/rules/scripts/` directory contains several utility scripts:
 > Kim, D., Paggi, J. M., Park, C., Bennett, C., & Salzberg, S. L. _Graph-based genome alignment and genotyping with HISAT2 and HISAT-genotype_. Nature Biotechnology, 37, 907–915, **2019**. https://doi.org/10.1038/s41587-019-0201-4.
 
 > Li, B. & Dewey, C. N. _RSEM: accurate transcript quantification from RNA-Seq data with or without a reference genome_. BMC Bioinformatics, 12, 323, **2011**. https://doi.org/10.1186/1471-2105-12-323.
-
-> Ewels, P., Magnusson, M., Lundin, S., & Käller, M. _MultiQC: summarize analysis results for multiple tools and samples in a single report_. Bioinformatics, 32(19), 3047–3048, **2016**. https://doi.org/10.1093/bioinformatics/btw354.
 
 ## Questions
 
