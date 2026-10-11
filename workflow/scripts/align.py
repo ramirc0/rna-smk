@@ -146,7 +146,7 @@ def main(argv=None):
     for kind in ("genome", "anno"):
         flagstat = f"{prefix}_{kind}_flagstat.txt"
         with open(flagstat, "w") as f:
-            run(["samtools", "flagstat", f"{prefix}_{kind}.bam"], stdout=f)
+            run(["samtools", "flagstat", "-@", ncpus, f"{prefix}_{kind}.bam"], stdout=f)
         qc = QCMetric(f"samtools_{kind}_flagstat", parse_flagstats(flagstat))
         write_json(qc.to_ordered_dict(), f"{prefix}_{kind}_flagstat.json")
     qc = QCMetric("star_log_qc", parse_starlog(f"{prefix}_Log.final.out"))
