@@ -9,7 +9,9 @@ rule bam_to_signals:
         SIGNAL_TRACKS,
     params:
         outdir=lambda w: f"{OUTDIR}/{w.sample}/signals",
-        is_stranded=lambda w: config["sequencing"]["is_stranded"],
+        strandedness=lambda w: (
+            "stranded" if config["sequencing"]["is_stranded"] else "unstranded"
+        ),
     log:
         f"{LOGDIR}/bam_to_signals/{{sample}}.txt",
     benchmark:
@@ -25,6 +27,6 @@ rule bam_to_signals:
             --output_dir {params.outdir:q} \
             --bamfile {input.genome_bam:q} \
             --chrom_sizes {input.chromsizes:q} \
-            --is_stranded {params.is_stranded:q} \
+            --strandedness {params.strandedness:q} \
             --bamroot {wildcards.sample:q}_genome
         """

@@ -185,11 +185,6 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 These legacy bugs stay to keep outputs identical to the production results.
 A fix changes outputs.
 
-- `bam_to_signals.py` parses `--is_stranded` with `type=bool`, so the string
-  `False` is true. With `is_stranded: false` it still writes stranded tracks,
-  and the rule fails on missing outputs.
-- `bam_to_signals.py` ignores the exit code of `bigtools`. A failed step can
-  leave a bad output in a job that reports success.
 - `get_strandedness.py` runs its binomial test on millions of reads, so almost
   any imbalance counts as stranded.
 

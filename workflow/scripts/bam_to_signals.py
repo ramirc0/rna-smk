@@ -7,24 +7,34 @@ __license__ = "MIT"
 import argparse
 import logging
 import os
-import shlex
 import subprocess
-import sys
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-consolehandler = logging.StreamHandler()
-consolehandler.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s: %(message)s")
-consolehandler.setFormatter(formatter)
-logger.addHandler(consolehandler)
 
-STAR_COMMAND = """STAR --runMode inputAlignmentsFromBAM \
-                --inputBAMfile {input_bam} \
-                --outWigType bedGraph \
-                --outWigStrand {strandedness} \
-                --outWigReferencesPrefix chr
-                --outFileNamePrefix {output_dir}/"""
+TRACKS = {
+    "stranded": {
+        "Signal.UniqueMultiple.str1.out.bg": "minusAll",
+        "Signal.Unique.str1.out.bg": "minusUniq",
+        "Signal.UniqueMultiple.str2.out.bg": "plusAll",
+        "Signal.Unique.str2.out.bg": "plusUniq",
+    },
+    "unstranded": {
+        "Signal.UniqueMultiple.str1.out.bg": "all",
+        "Signal.Unique.str1.out.bg": "uniq",
+    },
+}
+
+
+def run(command):
+    """Log and run a command, raising on a nonzero exit.
+
+    Parameters
+    ----------
+    command : list of str
+        Program and arguments.
+    """
+    logger.info("Running %s", " ".join(command))
+    subprocess.run(command, check=True)
 
 
 def build_parser():
@@ -36,34 +46,30 @@ def build_parser():
         Parser for the bam_to_signals.py flags.
     """
     parser = argparse.ArgumentParser()
+    parser.add_argument("--output_dir", required=True, help="Output directory.")
     parser.add_argument(
-        "--output_dir", type=str, help="Path to output directory.", required=True
+        "--threads", type=int, default=1, help="Threads for bigWig conversion."
+    )
+    parser.add_argument("--bamfile", required=True, help="Coordinate-sorted BAM.")
+    parser.add_argument(
+        "--chrom_sizes", required=True, help="Chromosome sizes of the BAM's genome."
     )
     parser.add_argument(
-        "--threads",
-        type=int,
-        help="Number of threads for `bigtools bedgraphtobigwig`",
-        default=1,
+        "--strandedness",
+        required=True,
+        choices=list(TRACKS),
+        help="`stranded` writes one track per strand.",
     )
-    parser.add_argument("--bamfile", type=str, help="Input bam")
-    parser.add_argument(
-        "--chrom_sizes", type=str, help="chromosome sizes file the input bam"
-    )
-    parser.add_argument("--is_stranded", type=bool)
     parser.add_argument(
         "--bamroot",
-        type=str,
-        help="""
-             Root name for output bams. For example out_bam
-             will create out_bam_genome.bam and out_bam_anno.bam
-             """,
-        default="out_bam",
+        required=True,
+        help="Output name root. `foo` writes foo_plusAll.bw and so on.",
     )
     return parser
 
 
 def main(argv=None):
-    """Write the STAR signal bedGraphs of a BAM as bigWigs.
+    """Write the STAR signal tracks of a BAM as bigWigs.
 
     Parameters
     ----------
@@ -71,108 +77,37 @@ def main(argv=None):
         Command-line arguments. Defaults to `sys.argv[1:]`.
     """
     args = build_parser().parse_args(argv)
-    print(args)
-    star_return_code = call_star(args.bamfile, args.is_stranded, args.output_dir)
-
-    try:
-        assert star_return_code == 0
-    except AssertionError:
-        logger.exception("Building bedGraph had a problem, most likely out of memory.")
-        sys.exit(1)
-
-    kwargs = {
-        "chrom_sizes": args.chrom_sizes,
-        "threads": args.threads,
-    }
-
-    if args.is_stranded:
-        call_bg_to_bw(
-            os.path.join(args.output_dir, "Signal.UniqueMultiple.str1.out.bg"),
-            os.path.join(args.output_dir, args.bamroot + "_minusAll.bw"),
-            **kwargs,
-        )
-        call_bg_to_bw(
-            os.path.join(args.output_dir, "Signal.Unique.str1.out.bg"),
-            os.path.join(args.output_dir, args.bamroot + "_minusUniq.bw"),
-            **kwargs,
-        )
-        call_bg_to_bw(
-            os.path.join(args.output_dir, "Signal.UniqueMultiple.str2.out.bg"),
-            os.path.join(args.output_dir, args.bamroot + "_plusAll.bw"),
-            **kwargs,
-        )
-        call_bg_to_bw(
-            os.path.join(args.output_dir, "Signal.Unique.str2.out.bg"),
-            os.path.join(args.output_dir, args.bamroot + "_plusUniq.bw"),
-            **kwargs,
-        )
-    else:
-        call_bg_to_bw(
-            os.path.join(args.output_dir, "Signal.UniqueMultiple.str1.out.bg"),
-            os.path.join(args.output_dir, args.bamroot + "_all.bw"),
-            **kwargs,
-        )
-        call_bg_to_bw(
-            os.path.join(args.output_dir, "Signal.Unique.str1.out.bg"),
-            os.path.join(args.output_dir, args.bamroot + "_uniq.bw"),
-            **kwargs,
-        )
-
-
-def call_star(input_bam, is_stranded, output_dir):
-    """Write the signal bedGraphs of a BAM with STAR.
-
-    Parameters
-    ----------
-    input_bam : str
-        Coordinate-sorted BAM.
-    is_stranded : bool
-        Write one bedGraph per strand.
-    output_dir : str
-        Directory for the bedGraphs.
-
-    Returns
-    -------
-    int
-        STAR exit code.
-    """
-    if is_stranded:
-        strandedness = "stranded"
-    else:
-        strandedness = "unstranded"
-
-    command = STAR_COMMAND.format(
-        input_bam=input_bam,
-        strandedness=strandedness.capitalize(),
-        output_dir=output_dir,
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s: %(message)s",
     )
-    logger.info("Running STAR command %s", command)
-    return_code = subprocess.call(shlex.split(command))
-    return return_code
-
-
-def call_bg_to_bw(input_bg, out_fn, chrom_sizes, threads):
-    """Convert a STAR bedGraph to bigWig and delete the bedGraph.
-
-    Parameters
-    ----------
-    input_bg : str
-        The bedGraph from STAR.
-    out_fn : str
-        The bigWig to write.
-    chrom_sizes : str
-        Chromosome sizes file.
-    threads : int
-        Threads for `bigtools bedgraphtobigwig`.
-    """
-    # STAR writes chromosomes in genome order, not the lexical order that
-    # bigtools' default `--sorted all` expects.
-    command = f"bigtools bedgraphtobigwig --sorted start --nthreads {threads} {input_bg} {chrom_sizes} {out_fn}"
-
-    logger.info("Building bigWig: %s", command)
-
-    subprocess.call(shlex.split(command))
-    os.remove(input_bg)
+    out = args.output_dir
+    run(
+        [
+            "STAR",
+            "--runMode", "inputAlignmentsFromBAM",
+            "--inputBAMfile", args.bamfile,
+            "--outWigType", "bedGraph",
+            "--outWigStrand", args.strandedness.capitalize(),
+            "--outWigReferencesPrefix", "chr",
+            "--outFileNamePrefix", f"{out}/",
+        ]
+    )  # fmt: skip
+    for bedgraph, track in TRACKS[args.strandedness].items():
+        bedgraph = os.path.join(out, bedgraph)
+        # STAR writes chromosomes in genome order, not the lexical order that
+        # bigtools' default `--sorted all` expects.
+        run(
+            [
+                "bigtools", "bedgraphtobigwig",
+                "--sorted", "start",
+                "--nthreads", str(args.threads),
+                bedgraph,
+                args.chrom_sizes,
+                os.path.join(out, f"{args.bamroot}_{track}.bw"),
+            ]
+        )  # fmt: skip
+        os.remove(bedgraph)
 
 
 if __name__ == "__main__":
