@@ -67,8 +67,9 @@ full GRCh38. They are two replicates each of GM12878 (ENCSR000AEC) and K562
 snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
 ```
 
-Outputs go under `results/integration/`. The test builds its own STAR and RSEM
-indexes there, so it never touches `results/refs/`. Compare the QC with ENCODE's
+Outputs go under `results/integration/`. Its reads are 101 bp, so it sets
+`sjdb_overhang: 100` and builds its own STAR and RSEM indexes there. It never
+touches `results/refs/`. Compare the QC with ENCODE's
 for the same replicates.
 
 ## Inputs
@@ -94,6 +95,7 @@ The references live in `resources/` (gitignored). Neither may be gzipped.
 | `references.gtf` | Gene annotation GTF, for STAR, RSEM and the strandedness gene model. |
 | `sequencing.is_stranded` | Write plus and minus strand signal tracks. |
 | `sequencing.strand_direction` | `forward`, `reverse` or `unstranded`. Sets RSEM's `--forward-prob`. |
+| `sequencing.sjdb_overhang` | STAR's `--sjdbOverhang`: read length minus 1. `<outdir>/refs/` holds one index, so a run with another value MUST use its own `outdir`. |
 | `sequencing.rsem_seed` | RSEM random seed. |
 
 ## Steps
@@ -101,8 +103,8 @@ The references live in `resources/` (gitignored). Neither may be gzipped.
 Preprocessing and alignment, in `preprocess.smk` and `align.smk`:
 
 - `fastp` trims adapters and low-quality bases. It writes HTML and JSON reports.
-- `index` builds the STAR genome index with the GTF's splice junctions. Its
-  `sjdbOverhang` is one less than the shortest read in the first sample's raw R1.
+- `index` builds the STAR genome index with the GTF's splice junctions and
+  `sequencing.sjdb_overhang`.
 - `align` runs STAR with the ENCODE parameters. It writes a coordinate-sorted
   genome BAM and an RSEM-ready transcriptome BAM (`_anno.bam`), with flagstat
   and STAR log reports as text and JSON.
@@ -191,8 +193,6 @@ A fix changes outputs.
   leave a bad output in a job that reports success.
 - The `align` rule's `samtools quickcheck` only logs. A corrupt BAM does not
   fail the job.
-- `index` takes `sjdbOverhang` from seqkit's sixth column. That is the minimum
-  read length of the first sample's raw R1, not the average.
 - `align.py` passes `--outSAMheaderCommentFile COfile.txt`, a path relative to
   the working directory. A `COfile.txt` in the repository root adds `@CO`
   lines to every BAM.

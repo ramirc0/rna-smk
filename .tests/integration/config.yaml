@@ -11,4 +11,5 @@ references:
 sequencing:
   is_stranded: true
   strand_direction: reverse
+  sjdb_overhang: 100
   rsem_seed: 42

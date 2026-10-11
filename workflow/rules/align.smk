@@ -2,15 +2,15 @@
 
 
 # Run-independent: built once under results/refs/, reused across runs.
-# sjdbOverhang comes from the first sample, so a new first sample rebuilds it.
 rule index:
     input:
         fasta=REFERENCE_FASTA,
         gtf=REFERENCE_GTF,
-        r1=R1_OF[SAMPLES[0]],
     output:
         index_dir=directory(STAR_INDEX),
         chromsizes=f"{STAR_INDEX}/chrNameLength.txt",
+    params:
+        sjdb_overhang=lambda w: config["sequencing"]["sjdb_overhang"],
     log:
         f"{LOGDIR}/index.txt",
     benchmark:
@@ -23,15 +23,13 @@ rule index:
 
         ulimit -n 65536
 
-        AVG_READ_LENGTH=$(seqkit stats {input.r1:q} | awk 'NR>1 {{print int($6)}}')
-
         STAR \
             --runThreadN {threads:q} \
             --runMode genomeGenerate \
             --genomeDir {output.index_dir:q} \
             --genomeFastaFiles {input.fasta:q} \
             --sjdbGTFfile {input.gtf:q} \
-            --sjdbOverhang $(($AVG_READ_LENGTH - 1))
+            --sjdbOverhang {params.sjdb_overhang:q}
         """
 
 
