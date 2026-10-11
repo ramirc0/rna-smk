@@ -205,17 +205,17 @@ A fix changes outputs.
 
 ## References
 
-Chen, Shifu. 2025. "Fastp 1.0: An Ultra-Fast All-Round Tool for FASTQ Data Quality Control and Preprocessing." iMeta 4 (5): e70078. https://doi.org/10.1002/imt2.70078.
+Chen, Shifu. 2025. “Fastp 1.0: An Ultra‐fast All‐round Tool for FASTQ Data Quality Control and Preprocessing.” iMeta 4 (5). https://doi.org/10.1002/imt2.70078.
 
-Danecek, Petr, James K. Bonfield, Jennifer Liddle, et al. 2021. "Twelve Years of SAMtools and BCFtools." GigaScience 10 (2): giab008. https://doi.org/10.1093/gigascience/giab008.
+Danecek, Petr, James K. Bonfield, Jennifer Liddle, et al. 2021. “Twelve Years of SAMtools and BCFtools.” GigaScience 10 (2). https://doi.org/10.1093/gigascience/giab008.
 
-Dobin, Alexander, Carrie A. Davis, Felix Schlesinger, et al. 2013. "STAR: Ultrafast Universal RNA-Seq Aligner." Bioinformatics 29 (1): 15–21. https://doi.org/10.1093/bioinformatics/bts635.
+Dobin, Alexander, Carrie A. Davis, Felix Schlesinger, et al. 2013. “STAR: Ultrafast Universal RNA-Seq Aligner.” Bioinformatics (Oxford, England) 29 (1): 15–21. https://doi.org/10.1093/bioinformatics/bts635.
 
-Li, Bo, and Colin N. Dewey. 2011. "RSEM: Accurate Transcript Quantification from RNA-Seq Data with or without a Reference Genome." BMC Bioinformatics 12: 323. https://doi.org/10.1186/1471-2105-12-323.
+Li, Bo, and Colin N. Dewey. 2011. “RSEM: Accurate Transcript Quantification from RNA-Seq Data with or without a Reference Genome.” BMC Bioinformatics 12 (1). https://doi.org/10.1186/1471-2105-12-323.
 
-Mölder, Felix, Kim Philipp Jablonski, Brice Letcher, et al. 2021. "Sustainable Data Analysis with Snakemake." F1000Research 10 (January): 33. https://doi.org/10.12688/f1000research.29032.2.
+Mölder, Felix, Kim Philipp Jablonski, Brice Letcher, et al. 2021. “Sustainable Data Analysis with Snakemake.” F1000Research 10 (April): 33. https://doi.org/10.12688/f1000research.29032.2.
 
-Wang, Liguo, Shengqin Wang, and Wei Li. 2012. "RSeQC: Quality Control of RNA-Seq Experiments." Bioinformatics 28 (16): 2184–85. https://doi.org/10.1093/bioinformatics/bts356.
+Wang, Liguo, Shengqin Wang, and Wei Li. 2012. “RSeQC: Quality Control of RNA-Seq Experiments.” Bioinformatics (Oxford, England) 28 (16): 2184–85. https://doi.org/10.1093/bioinformatics/bts356.
 
 ## Questions
 
