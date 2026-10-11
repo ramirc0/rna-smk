@@ -71,6 +71,5 @@ rule align:
             --ram_gb {params.ram_gb:q} \
             --ncpus {threads:q}
 
-        samtools quickcheck {output.genome_bam:q} {output.anno_bam:q} && \
-            echo "$(date): samtools quickcheck OK" || echo "$(date): samtools quickcheck FAIL"
+        samtools quickcheck {output.genome_bam:q} {output.anno_bam:q}
         """

@@ -36,7 +36,7 @@ STAR_OPTIONS = [
 
 
 def run(command, **kwargs):
-    """Log and run a command.
+    """Log and run a command, raising on a nonzero exit.
 
     Parameters
     ----------
@@ -51,7 +51,7 @@ def run(command, **kwargs):
         The finished process.
     """
     logger.info("Running %s", " ".join(command))
-    return subprocess.run(command, check=False, **kwargs)
+    return subprocess.run(command, check=True, **kwargs)
 
 
 def write_json(obj, path):
