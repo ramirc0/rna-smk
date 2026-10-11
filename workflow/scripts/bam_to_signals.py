@@ -152,7 +152,7 @@ def call_star(input_bam, is_stranded, output_dir):
 
 
 def call_bg_to_bw(input_bg, out_fn, chrom_sizes, threads):
-    """Sort a bedGraph, convert it to bigWig, and delete both bedGraphs.
+    """Convert a STAR bedGraph to bigWig and delete the bedGraph.
 
     Parameters
     ----------
@@ -165,21 +165,14 @@ def call_bg_to_bw(input_bg, out_fn, chrom_sizes, threads):
     threads : int
         Threads for `bigtools bedgraphtobigwig`.
     """
-    sorted_bg = input_bg.replace(".bg", ".sorted.bg")
-
-    bedgraph_cmd = f"bedtools sort -i {input_bg}"
-
-    logger.info("Sorting bedgraph: %s", bedgraph_cmd)
-
-    with open(sorted_bg, "w") as f:
-        subprocess.call(shlex.split(bedgraph_cmd), stdout=f)
-    command = f"bigtools bedgraphtobigwig --nthreads {threads} {sorted_bg} {chrom_sizes} {out_fn}"
+    # STAR writes chromosomes in genome order, not the lexical order that
+    # bigtools' default `--sorted all` expects.
+    command = f"bigtools bedgraphtobigwig --sorted start --nthreads {threads} {input_bg} {chrom_sizes} {out_fn}"
 
     logger.info("Building bigWig: %s", command)
 
     subprocess.call(shlex.split(command))
     os.remove(input_bg)
-    os.remove(sorted_bg)
 
 
 if __name__ == "__main__":

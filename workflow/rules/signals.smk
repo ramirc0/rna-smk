@@ -20,19 +20,11 @@ rule bam_to_signals:
         r"""
         exec &> >(tee {log:q})
 
-        samtools sort \
-            -@ {threads:q} \
-            -m 1G \
-            -o {params.outdir:q}/temp_sorted.bam \
-            {input.genome_bam:q}
-
         python workflow/scripts/bam_to_signals.py \
             --threads {threads:q} \
             --output_dir {params.outdir:q} \
-            --bamfile {params.outdir:q}/temp_sorted.bam \
+            --bamfile {input.genome_bam:q} \
             --chrom_sizes {input.chromsizes:q} \
             --is_stranded {params.is_stranded:q} \
             --bamroot {wildcards.sample:q}_genome
-
-        rm {params.outdir:q}/temp_sorted.bam
         """
