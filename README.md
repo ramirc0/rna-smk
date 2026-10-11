@@ -5,11 +5,6 @@ RNA-seq. Reads are trimmed and aligned with STAR. The alignments feed bigWig
 signal tracks, RSEM gene and isoform quantification and strandedness
 inference.
 
-> [!NOTE]
-> Alignment, signal and quantification steps come from the
-> [ENCODE RNA-seq pipeline](https://github.com/ENCODE-DCC/rna-seq-pipeline)
-> by Otto Jolanki and the ENCODE DCC, under the MIT license.
-
 ## Layout
 
 ```
@@ -224,6 +219,8 @@ Chen, Shifu. 2025. “Fastp 1.0: An Ultra‐fast All‐round Tool for FASTQ Data
 Danecek, Petr, James K. Bonfield, Jennifer Liddle, et al. 2021. “Twelve Years of SAMtools and BCFtools.” GigaScience 10 (2). https://doi.org/10.1093/gigascience/giab008.
 
 Dobin, Alexander, Carrie A. Davis, Felix Schlesinger, et al. 2013. “STAR: Ultrafast Universal RNA-Seq Aligner.” Bioinformatics (Oxford, England) 29 (1): 15–21. https://doi.org/10.1093/bioinformatics/bts635.
+
+ENCODE DCC. 2022. “ENCODE RNA-seq Pipeline,” version 1.2.4. GitHub. https://github.com/ENCODE-DCC/rna-seq-pipeline.
 
 Li, Bo, and Colin N. Dewey. 2011. “RSEM: Accurate Transcript Quantification from RNA-Seq Data with or without a Reference Genome.” BMC Bioinformatics 12 (1). https://doi.org/10.1186/1471-2105-12-323.
 

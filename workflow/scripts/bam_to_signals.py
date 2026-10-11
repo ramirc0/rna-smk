@@ -1,4 +1,7 @@
-"""Run the bam to signals (bigWig) step of the ENCODE rna-seq-pipeline."""
+"""Run the bam to signals (bigWig) step of the ENCODE rna-seq-pipeline.
+
+Adapted from ENCODE's rna-seq-pipeline. Copyright (c) 2018 ENCODE DCC. MIT License.
+"""
 
 import argparse
 import logging

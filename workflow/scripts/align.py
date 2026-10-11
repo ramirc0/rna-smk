@@ -1,4 +1,7 @@
-"""Run the alignment (mapping) step of the ENCODE rna-seq-pipeline."""
+"""Run the alignment (mapping) step of the ENCODE rna-seq-pipeline.
+
+Adapted from ENCODE's rna-seq-pipeline. Copyright (c) 2018 ENCODE DCC. MIT License.
+"""
 
 import argparse
 import json
