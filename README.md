@@ -180,6 +180,28 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 - Docstrings follow numpydoc. `pixi run lint` checks the scripts with ruff and
   `numpydoc lint`. Neither tool parses `.smk` files.
 
+## Differences from ENCODE
+
+The STAR alignment flags and the RSEM flags match
+[ENCODE's pipeline](https://github.com/ENCODE-DCC/rna-seq-pipeline) v1.2.4.
+The steps around them differ:
+
+| Area | ENCODE v1.2.4 | rna-smk |
+|---|---|---|
+| Trimming | None | fastp |
+| STAR, RSEM, samtools | 2.5.1b, 1.2.31, 1.9 | 2.7.11b, 1.3.3, 1.22 |
+| STAR index | `--sjdbOverhang 100`, with ERCC and phiX spike-ins | `sequencing.sjdb_overhang`, no spike-ins |
+| Annotation | GENCODE V29 primary assembly plus tRNAs | The configured GTF. Production uses GENCODE v49 basic. |
+| bigWig conversion | kent `bedSort` and `bedGraphToBigWig` | bigtools |
+| RSEM seed | 12345 | `sequencing.rsem_seed`, 42 in the template |
+| Genes-detected JSON | `QCMetricRecord` layout | One key, `number_of_genes_gt_1_TPM` |
+| Strandedness inference | None | RSeQC, report only |
+| Kallisto, reads by gene type, MAD QC, pBAM | Yes | No |
+| Several FASTQ pairs per replicate, single-end reads | Yes | No |
+
+The trimming, tool versions and annotation change every output. The bigWig
+tools change only the file bytes.
+
 ## Known issues
 
 These legacy bugs stay to keep outputs identical to the production results.
