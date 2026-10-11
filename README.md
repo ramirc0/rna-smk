@@ -57,6 +57,10 @@ Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
 intervals change with `-p`, so another thread count gives other numbers. The
 local profile sets `cores: 44` for this reason.
 
+A workflow update that changes a rule's code or params makes Snakemake rerun
+that rule in an existing run. To keep finished outputs, resume such a run with
+`--rerun-triggers mtime`.
+
 ## Integration test
 
 `.tests/integration/` runs four ENCODE total RNA-seq replicates end to end on

@@ -27,7 +27,8 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 
 - `workflow/envs/` pins match `clarity001/rna-smk:latest` as cached on 2025-07-10, the image behind the production results. bedtools cannot match: it is 2.31.1, because 2.30.0 needs zlib <1.3.
 - Never use bioconda RSEM. Its builds define `NDEBUG`, which drops the `assert(fscanf(...))` calls that read the Gibbs count vectors. The credibility intervals come out wrong and the step runs for hours.
-- Tag `pre-template` is the last commit before the template port. It is the equivalence baseline.
+- Tag `post-template` is the equivalence baseline. Its outputs match `pre-template`, the last commit before the template port.
+- `bedtools` and `seqkit` in `workflow/envs/pixi.toml` are unused. Drop them with the next change to that workspace, because any change reruns every rule.
 - README.md "Known issues" lists legacy bugs kept on purpose. A fix changes outputs and needs the user's approval.
 
 ## Gotchas
@@ -44,10 +45,10 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 
 ## Verifying a change
 
-No test suite. Diff against the legacy pipeline on real samples:
+No test suite. Diff against `post-template` on real samples:
 
 1. Take the first 1M read pairs of two production samples. Use the full GRCh38 FASTA and GENCODE GTF. STAR's default `--genomeSAindexNbases` is too large for a chr21+chr22 genome.
-2. Run `git archive pre-template` with `chmod +x` on its scripts, Snakemake 9.16.3 and the cached image as `--apptainer-prefix`. Give it a scratch `config.yml` whose `workdir` is the scratch dir.
-3. Run this workflow with the same per-rule threads.
+2. Check out `post-template` in a scratch `git worktree` with a scratch config. Run `pixi install` in its `workflow/envs/` and `workflow/envs/qc/` on the login node.
+3. Run both with the same per-rule threads.
 4. Run `fastp` and `align` single-threaded in both. Multithreading reorders reads.
-5. Compare BAM records with `samtools view`, gzipped files decompressed, and bigWigs decoded with `bigtools bigwigtobedgraph`.
+5. Compare BAM records with `samtools view`, gzipped files decompressed, and bigWig values per base after `bigtools bigwigtobedgraph`. A new read order moves where STAR splits equal-valued intervals in the multi-mapper tracks.
