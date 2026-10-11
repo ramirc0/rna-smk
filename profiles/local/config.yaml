@@ -22,16 +22,16 @@ set-threads:
   fastp: 8
   index: 44
   align: 44
-  bam_to_signals: 44
+  bam_to_signals: 4
   rsem_index: 44
   rsem_quant: 44
   gene_model: 1
   strandedness: 1
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
-  fastp: {mem_mb: 32000}
-  index: {mem_mb: 250000}
-  align: {mem_mb: 250000}
-  bam_to_signals: {mem_mb: 250000}
-  rsem_index: {mem_mb: 128000}
-  rsem_quant: {mem_mb: 128000}
+  fastp: {mem_mb: 4000}
+  index: {mem_mb: 64000}
+  align: {mem_mb: 64000}
+  bam_to_signals: {mem_mb: 16000}
+  rsem_index: {mem_mb: 16000}
+  rsem_quant: {mem_mb: 80000}

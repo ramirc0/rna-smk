@@ -23,7 +23,7 @@ set-threads:
   fastp: 8
   index: 44
   align: 44
-  bam_to_signals: 44
+  bam_to_signals: 4
   rsem_index: 44
   rsem_quant: 44
   gene_model: 1
@@ -31,23 +31,23 @@ set-threads:
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
   fastp:
-    mem_mb: 32000 * attempt
+    mem_mb: 4000 * attempt
   index:
-    mem_mb: 250000 * attempt
+    mem_mb: 64000 * attempt
   align:
     slurm_partition: 12hours
     runtime: 720m
-    mem_mb: 250000 * attempt
+    mem_mb: 64000 * attempt
   bam_to_signals:
     slurm_partition: 30mins
     runtime: 30m
-    mem_mb: 250000 * attempt
+    mem_mb: 16000 * attempt
   rsem_index:
-    mem_mb: 128000 * attempt
+    mem_mb: 16000 * attempt
   rsem_quant:
     slurm_partition: 12hours
     runtime: 720m
-    mem_mb: 128000 * attempt
+    mem_mb: 80000 * attempt
 
 rerun-incomplete: true
 keep-going: true
