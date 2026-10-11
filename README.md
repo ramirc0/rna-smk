@@ -41,6 +41,7 @@ pyproject.toml           ruff + numpydoc config
 ```bash
 cp config/config.yaml.template config/config.yaml  # then edit
 cp config/samples.example.tsv config/samples.tsv   # then edit
+pixi install --manifest-path workflow/envs/pixi.toml  # builds RSEM once
 pixi shell                                         # launcher env
 snakemake -n -p --profile profiles/local           # dry run
 snakemake --profile profiles/local                 # local
@@ -153,6 +154,9 @@ of RSEM compiles out its `assert()` calls, and some of them read input, so the
 credibility intervals go wrong. `workflow/envs/rsem/` builds the image's RSEM
 commit from source with pixi-build instead. `workflow/envs/qc/` runs the QC rules. Each `pixi.lock` pins
 every package. pixi MUST be on `PATH`. Jobs install the envs on first use.
+The production env is the exception. Its RSEM build clones GitHub, which some
+compute nodes cannot reach, and concurrent jobs would build it at once. Install
+it on the login node before the first run.
 
 Add a dependency with `pixi add <pkg>` in the workspace's directory. After a
 hand edit, run `pixi lock` there (rules use `locked=True`). Any change to a

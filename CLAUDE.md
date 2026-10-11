@@ -20,7 +20,7 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 - `pyproject.toml` is ruff and numpydoc config only. pixi ignores it.
 - Rules use `locked=True`. After a manifest edit, run `pixi lock` in that workspace.
 - Any manifest or lock change reruns every rule that uses the workspace. The plugin hashes the whole `pixi.toml` and `pixi.lock`. A QC dependency in `workflow/envs/` would rerun every alignment and quantification.
-- `workflow/envs/rsem/` is a pixi-build package: RSEM `8bc1e21` from source. The lock does not hash its recipe. After a recipe edit, delete `workflow/envs/.pixi` and rerun the RSEM rules with `--forcerun`.
+- `workflow/envs/rsem/` is a pixi-build package: RSEM `8bc1e21` from source. The lock does not hash its recipe. Install it with `pixi install` in `workflow/envs/` before a run in a fresh checkout. Compute nodes may not resolve github.com. After a recipe edit, delete `workflow/envs/.pixi` and rerun the RSEM rules with `--forcerun`.
 - Both env paths resolve relative to the rule file. New rule files MUST sit in `workflow/rules/`.
 
 ## Outputs must not drift
