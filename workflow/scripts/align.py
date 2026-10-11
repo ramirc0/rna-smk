@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import os
+import pathlib
 import re
 import subprocess
 
@@ -166,24 +167,48 @@ def main(argv=None):
     prefix = os.path.join(out, args.bamroot)
     ncpus = str(args.ncpus)
 
-    run(
+    star = [
+        "STAR",
+        "--genomeDir", args.indexdir,
+        "--readFilesIn", args.fastq_r1, args.fastq_r2,
+        "--outFileNamePrefix", f"{out}/",
+        "--readFilesCommand", "zcat",
+        "--runThreadN", ncpus,
+        *STAR_OPTIONS,
+        "--limitBAMsortRAM", f"{args.ram_gb}000000000",
+        "--outBAMsortingThreadN", ncpus,
+        "--outBAMsortingBinsN", "100",
+        "--quantTranscriptomeBAMcompression", "0",
+    ]  # fmt: skip
+    # STAR compresses the transcriptome BAM on one thread, which caps its mapping
+    # speed. It writes the BAM uncompressed into a FIFO for samtools to compress.
+    # `--outStd BAM_Quant` would avoid the FIFO, but it segfaults in STAR 2.7.11b.
+    fifo = f"{out}/Aligned.toTranscriptome.out.bam"
+    transcriptome_bam = f"{out}/transcriptome.bam"
+    pathlib.Path(fifo).unlink(missing_ok=True)  # left by a failed attempt
+    os.mkfifo(fifo)
+    samtools = subprocess.Popen(
         [
-            "STAR",
-            "--genomeDir", args.indexdir,
-            "--readFilesIn", args.fastq_r1, args.fastq_r2,
-            "--outFileNamePrefix", f"{out}/",
-            "--readFilesCommand", "zcat",
-            "--runThreadN", ncpus,
-            *STAR_OPTIONS,
-            "--limitBAMsortRAM", f"{args.ram_gb}000000000",
-            "--outBAMsortingThreadN", ncpus,
-            "--outBAMsortingBinsN", "100",
+            "samtools", "view",
+            "--no-PG",
+            "-@", ncpus,
+            "-b",
+            "-o", transcriptome_bam,
+            fifo,
         ]
     )  # fmt: skip
+    try:
+        run(star)
+    except subprocess.CalledProcessError:
+        # samtools blocks on opening the FIFO until STAR opens it to write.
+        samtools.kill()
+        raise
+    if samtools.wait():
+        raise subprocess.CalledProcessError(samtools.returncode, samtools.args)
+    os.remove(fifo)
     os.rename(f"{out}/Aligned.sortedByCoord.out.bam", f"{prefix}_genome.bam")
     os.rename(f"{out}/Log.final.out", f"{prefix}_Log.final.out")
 
-    transcriptome_bam = f"{out}/Aligned.toTranscriptome.out.bam"
     validator = subprocess.run(
         ["rsem-sam-validator", transcriptome_bam],
         stdout=subprocess.PIPE,

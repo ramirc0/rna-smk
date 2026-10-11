@@ -196,6 +196,7 @@ The steps around them differ:
 | STAR, RSEM, samtools | 2.5.1b, 1.2.31, 1.9 | 2.7.11b, 1.3.3, 1.22 |
 | STAR index | `--sjdbOverhang 100`, with ERCC and phiX spike-ins | `sequencing.sjdb_overhang`, no spike-ins |
 | Annotation | GENCODE V29 primary assembly plus tRNAs | The configured GTF. Production uses GENCODE v49 basic. |
+| Transcriptome BAM compression | STAR, one thread, level 1 | samtools, all job threads, default level |
 | bigWig conversion | kent `bedSort` and `bedGraphToBigWig` | bigtools |
 | RSEM seed | 12345 | `sequencing.rsem_seed`, 42 in the template |
 | Genes-detected JSON | `QCMetricRecord` layout | One key, `number_of_genes_gt_1_TPM` |
@@ -203,8 +204,8 @@ The steps around them differ:
 | Kallisto, reads by gene type, MAD QC, pBAM | Yes | No |
 | Several FASTQ pairs per replicate, single-end reads | Yes | No |
 
-The trimming, tool versions and annotation change every output. The bigWig
-tools change only the file bytes.
+The trimming, tool versions and annotation change every output. The BAM
+compression and the bigWig tools change only the file bytes.
 
 ## Known issues
 
