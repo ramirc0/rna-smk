@@ -1,0 +1,9 @@
+# RSEM built from source. Every bioconda build of RSEM 1.3.3 compiles with
+# -DNDEBUG, which drops the assert() calls that read count vectors and the
+# model type in rsem-run-gibbs and rsem-calculate-credibility-intervals.
+[package]
+name = "rsem"
+version = "1.3.3"
+
+[package.build]
+backend = { name = "pixi-build-rattler-build", version = "*" }

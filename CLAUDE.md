@@ -20,11 +20,13 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 - `pyproject.toml` is ruff and numpydoc config only. pixi ignores it.
 - Rules use `locked=True`. After a manifest edit, run `pixi lock` in that workspace.
 - Any manifest or lock change reruns every rule that uses the workspace. The plugin hashes the whole `pixi.toml` and `pixi.lock`. A QC dependency in `workflow/envs/` would rerun every alignment and quantification.
+- `workflow/envs/rsem/` is a pixi-build package: RSEM `8bc1e21` from source. The lock does not hash its recipe. After a recipe edit, delete `workflow/envs/.pixi` and rerun the RSEM rules with `--forcerun`.
 - Both env paths resolve relative to the rule file. New rule files MUST sit in `workflow/rules/`.
 
 ## Outputs must not drift
 
-- `workflow/envs/` pins match `clarity001/rna-smk:latest` as cached on 2025-07-10, the image behind the production results. Two cannot match on bioconda: bedtools is 2.31.1 (2.30.0 needs zlib <1.3) and htslib is 1.22.1 (STAR and RSEM need it).
+- `workflow/envs/` pins match `clarity001/rna-smk:latest` as cached on 2025-07-10, the image behind the production results. bedtools cannot match: it is 2.31.1, because 2.30.0 needs zlib <1.3.
+- Never use bioconda RSEM. Its builds define `NDEBUG`, which drops the `assert(fscanf(...))` calls that read the Gibbs count vectors. The credibility intervals come out wrong and the step runs for hours.
 - Tag `pre-template` is the last commit before the template port. It is the equivalence baseline.
 - README.md "Known issues" lists legacy bugs kept on purpose. A fix changes outputs and needs the user's approval.
 

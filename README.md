@@ -148,7 +148,10 @@ The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
 for pixi deployment and SLURM. The rule envs are two more pixi workspaces.
 `workflow/envs/` runs the production rules. Its tool versions match
 `clarity001/rna-smk:latest` as cached on 2025-07-10, the image that produced the
-production results. `workflow/envs/qc/` runs the QC rules. Each `pixi.lock` pins
+production results. RSEM is the one exception to bioconda. Every bioconda build
+of RSEM compiles out its `assert()` calls, and some of them read input, so the
+credibility intervals go wrong. `workflow/envs/rsem/` builds the image's RSEM
+commit from source with pixi-build instead. `workflow/envs/qc/` runs the QC rules. Each `pixi.lock` pins
 every package. pixi MUST be on `PATH`. Jobs install the envs on first use.
 
 Add a dependency with `pixi add <pkg>` in the workspace's directory. After a
