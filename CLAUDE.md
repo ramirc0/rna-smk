@@ -34,6 +34,7 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 ## Gotchas
 
 - RSEM output depends on `-p`. Keep `rsem_quant` at 44 threads, and `--cores` at 44 or more.
+- RSEM's Gibbs and credibility-interval columns also depend on the transcriptome BAM's read order, which multithreaded STAR changes run to run. Two runs on the same reads share only the EM columns (`expected_count`, `TPM`, `FPKM`).
 - `<outdir>/refs/` holds one STAR index, built with `sequencing.sjdb_overhang`. A run with another value MUST use its own `outdir`, as the integration test does.
 - STAR and RSEM need `ulimit -n 65536`.
 - `SIGNAL_TRACKS` MUST NOT use `multiext()`. `expand()` rejects multiext-flagged paths.
