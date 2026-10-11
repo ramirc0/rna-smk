@@ -197,6 +197,7 @@ The steps around them differ:
 | STAR, RSEM, samtools | 2.5.1b, 1.2.31, 1.9 | 2.7.11b, 1.3.3, 1.22 |
 | STAR index | `--sjdbOverhang 100`, with ERCC and phiX spike-ins | `sequencing.sjdb_overhang`, no spike-ins |
 | Annotation | GENCODE V29 primary assembly plus tRNAs | The configured GTF. Production uses GENCODE v49 basic. |
+| Transcriptome BAM check | `rsem-sam-validator`, `convert-sam-for-rsem` if invalid | None. STAR's default `--quantTranscriptomeSAMoutput` writes it RSEM-ready. |
 | Transcriptome BAM compression | STAR, one thread, level 1 | samtools, all job threads, default level |
 | bigWig conversion | kent `bedSort` and `bedGraphToBigWig` | bigtools |
 | RSEM seed | 12345 | `sequencing.rsem_seed`, 42 in the template |

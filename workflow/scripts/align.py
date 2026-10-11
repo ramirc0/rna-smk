@@ -183,8 +183,8 @@ def main(argv=None):
     # STAR compresses the transcriptome BAM on one thread, which caps its mapping
     # speed. It writes the BAM uncompressed into a FIFO for samtools to compress.
     # `--outStd BAM_Quant` would avoid the FIFO, but it segfaults in STAR 2.7.11b.
+    # The default --quantTranscriptomeSAMoutput keeps the BAM RSEM-ready.
     fifo = f"{out}/Aligned.toTranscriptome.out.bam"
-    transcriptome_bam = f"{out}/transcriptome.bam"
     pathlib.Path(fifo).unlink(missing_ok=True)  # left by a failed attempt
     os.mkfifo(fifo)
     samtools = subprocess.Popen(
@@ -193,7 +193,7 @@ def main(argv=None):
             "--no-PG",
             "-@", ncpus,
             "-b",
-            "-o", transcriptome_bam,
+            "-o", f"{prefix}_anno.bam",
             fifo,
         ]
     )  # fmt: skip
@@ -208,21 +208,6 @@ def main(argv=None):
     os.remove(fifo)
     os.rename(f"{out}/Aligned.sortedByCoord.out.bam", f"{prefix}_genome.bam")
     os.rename(f"{out}/Log.final.out", f"{prefix}_Log.final.out")
-
-    validator = subprocess.run(
-        ["rsem-sam-validator", transcriptome_bam],
-        stdout=subprocess.PIPE,
-        text=True,
-        check=True,
-    )
-    # rsem-sam-validator exits 0 whether or not the BAM is valid, so the verdict
-    # comes from its last line: "is valid!" or "is not valid!".
-    if validator.stdout.strip().split("\n")[-1].endswith("is valid!"):
-        logger.info("Transcriptome bam is already rsem-sorted.")
-        os.rename(transcriptome_bam, f"{prefix}_anno.bam")
-    else:
-        logger.info("Transcriptome bam is not rsem-sorted.")
-        run(["convert-sam-for-rsem", transcriptome_bam, f"{prefix}_anno"])
 
     for kind in ("genome", "anno"):
         flagstat = f"{prefix}_{kind}_flagstat.txt"
