@@ -37,6 +37,7 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 - RSEM's Gibbs and credibility-interval columns also depend on the transcriptome BAM's read order, which multithreaded STAR changes run to run. Two runs on the same reads share only the EM columns (`expected_count`, `TPM`, `FPKM`).
 - `<outdir>/refs/` holds one STAR index, built with `sequencing.sjdb_overhang`. A run with another value MUST use its own `outdir`, as the integration test does.
 - STAR and RSEM need `ulimit -n 65536`.
+- RSEM does not check its writes. "Number of alignable reads does not match!" from `rsem-run-em` means `rsem-parse-alignments` lost writes, as during a CephFS hiccup on `/home`. Rerun the job.
 - `SIGNAL_TRACKS` MUST NOT use `multiext()`. `expand()` rejects multiext-flagged paths.
 - `.smk` files are not linted. Keep helper docstrings numpydoc by hand.
 - Resources MUST be flat values. Never derive `mem_mb` or `runtime` from input size.
