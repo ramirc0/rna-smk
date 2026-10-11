@@ -8,7 +8,6 @@ references:
   gtf: resources/gencode.v49.basic.annotation.gtf     # not gzipped
 
 sequencing:
-  endedness: paired            # paired or single
   is_stranded: true            # writes plus/minus signal tracks
   strand_direction: reverse    # forward, reverse or unstranded
   rsem_seed: 42

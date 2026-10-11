@@ -26,7 +26,7 @@ RSEM_COMMAND = """
     --no-bam-output \
     --ci-memory {mem_mb} \
     --forward-prob {fwd_prob} \
-    {paired_end} \
+    --paired-end \
     {anno_bam} \
     {resem_index} \
     {outprefix}
@@ -44,7 +44,6 @@ def build_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--rsem_index", type=str, help="path to rsem index")
     parser.add_argument("--anno_bam", type=str, help="STAR alignment to annotation.")
-    parser.add_argument("--endedness", type=str, choices=["paired", "single"])
     parser.add_argument(
         "--read_strand", type=str, choices=["forward", "reverse", "unstranded"]
     )
@@ -73,7 +72,6 @@ def main(argv=None):
             ncpus=args.ncpus,
             mem_mb=args.mem_mb,
             fwd_prob=strand_to_fwd_prob[args.read_strand],
-            paired_end="--paired-end" if args.endedness == "paired" else "",
             anno_bam=args.anno_bam,
             resem_index=args.rsem_index,
             outprefix=args.outprefix,

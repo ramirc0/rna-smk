@@ -51,7 +51,6 @@ rule align:
         star_log_json=f"{OUTDIR}/{{sample}}/align/{{sample}}_Log.final.json",
     params:
         outdir=lambda w: f"{OUTDIR}/{w.sample}/align",
-        endedness=lambda w: config["sequencing"]["endedness"],
         ram_gb=lambda w, resources: resources.mem_mb // 1000,
     log:
         f"{LOGDIR}/align/{{sample}}.txt",
@@ -71,7 +70,6 @@ rule align:
             --fastqs_r2 {input.r2:q} \
             --bamroot {wildcards.sample:q} \
             --indexdir {input.index_dir:q} \
-            --endedness {params.endedness:q} \
             --ram_gb {params.ram_gb:q} \
             --ncpus {threads:q}
 

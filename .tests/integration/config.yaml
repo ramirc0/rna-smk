@@ -9,7 +9,6 @@ references:
   gtf: /data/zusers/ramirezc/static/gencode.v49.basic.annotation.gtf
 
 sequencing:
-  endedness: paired
   is_stranded: true
   strand_direction: reverse
   rsem_seed: 42

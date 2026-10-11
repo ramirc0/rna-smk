@@ -92,7 +92,6 @@ The references live in `resources/` (gitignored). Neither may be gzipped.
 | `pixi_env` | Environment of `workflow/envs/pixi.toml` that the production rules use. |
 | `references.fasta` | Reference genome FASTA. |
 | `references.gtf` | Gene annotation GTF, for STAR, RSEM and the strandedness gene model. |
-| `sequencing.endedness` | `paired` or `single`. Only `paired` runs (see Known issues). |
 | `sequencing.is_stranded` | Write plus and minus strand signal tracks. |
 | `sequencing.strand_direction` | `forward`, `reverse` or `unstranded`. Sets RSEM's `--forward-prob`. |
 | `sequencing.rsem_seed` | RSEM random seed. |
@@ -194,14 +193,13 @@ A fix changes outputs.
   fail the job.
 - `index` takes `sjdbOverhang` from seqkit's sixth column. That is the minimum
   read length of the first sample's raw R1, not the average.
-- `fastp` always passes R2, so `endedness: single` cannot run.
 - `align.py` passes `--outSAMheaderCommentFile COfile.txt`, a path relative to
   the working directory. A `COfile.txt` in the repository root adds `@CO`
   lines to every BAM.
 - `bam_to_signals.py` names sorted bedGraphs with `str.replace('.bg', ...)` on
   the full path. A `run_id` or sample ID that contains `.bg` breaks it.
 - `get_strandedness.py` runs its binomial test on millions of reads, so almost
-  any imbalance counts as stranded. Its regexes match only paired-end output.
+  any imbalance counts as stranded.
 
 ## References
 

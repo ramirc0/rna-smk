@@ -28,37 +28,6 @@ consolehandler.setFormatter(formatter)
 logger.addHandler(consolehandler)
 
 
-def make_aligner(endedness, fastqs, ncpus, ram_gb, indexdir, outdir):
-    """Create the STAR aligner for the library's endedness.
-
-    Parameters
-    ----------
-    endedness : {"single", "paired"}
-        Library endedness.
-    fastqs : list of str
-        Read 1 FASTQ, then read 2 FASTQ for paired-end libraries.
-    ncpus : int
-        STAR threads.
-    ram_gb : int
-        RAM for BAM sorting, in GB.
-    indexdir : str
-        STAR index directory.
-    outdir : str
-        Output directory.
-
-    Returns
-    -------
-    StarAligner or None
-        The aligner, or None for an unknown endedness.
-    """
-    if endedness == "single":
-        logger.info("Creating a single-ended aligner.")
-        return SingleEndedStarAligner(fastqs, ncpus, ram_gb, indexdir, outdir)
-    elif endedness == "paired":
-        logger.info("Creating a paired-end aligner.")
-        return PairedEndStarAligner(fastqs, ncpus, ram_gb, indexdir, outdir)
-
-
 def choices(population, k):
     """Draw `k` elements from `population` with replacement.
 
@@ -158,7 +127,7 @@ def write_json(input_obj, output_path):
 
 
 class StarAligner(ABC):
-    """Settings and run step shared by single- and paired-end STAR jobs.
+    """Settings and run step of a STAR job.
 
     Parameters
     ----------
@@ -216,99 +185,6 @@ class StarAligner(ABC):
         str
             The STAR command.
         """
-
-
-class SingleEndedStarAligner(StarAligner):
-    """STAR job for a single-end library.
-
-    Parameters
-    ----------
-    fastqs : list of str
-        Read 1 FASTQ as the first element.
-    ncpus : int
-        STAR threads.
-    ram_gb : int
-        RAM for BAM sorting, in GB.
-    indexdir : str
-        STAR index directory.
-    outdir : str
-        Output directory.
-    """
-
-    command_string = """STAR --genomeDir {indexdir} \
-    --readFilesIn {infastq} \
-    --outFileNamePrefix {outdir}/ \
-    --readFilesCommand zcat \
-    --runThreadN {ncpus} \
-    --genomeLoad NoSharedMemory \
-    --outFilterMultimapNmax 20 \
-    --alignSJoverhangMin 8 \
-    --alignSJDBoverhangMin 1 \
-    --outFilterMismatchNmax 999 \
-    --outFilterMismatchNoverReadLmax 0.04 \
-    --alignIntronMin 20 \
-    --alignIntronMax 1000000 \
-    --alignMatesGapMax 1000000 \
-    --outSAMheaderCommentFile COfile.txt \
-    --outSAMheaderHD @HD VN:1.4 SO:coordinate \
-    --outSAMunmapped Within \
-    --outFilterType BySJout \
-    --outSAMattributes NH HI AS NM MD \
-    --outSAMstrandField intronMotif \
-    --outSAMtype BAM SortedByCoordinate  \
-    --quantMode TranscriptomeSAM \
-    --sjdbScore 1 \
-    --limitBAMsortRAM {ram_gb}000000000 \
-    --outBAMsortingThreadN {ncpus} \
-    --outBAMsortingBinsN 100"""
-
-    def __init__(self, fastqs, ncpus, ram_gb, indexdir, outdir):
-        """Build the STAR command for one FASTQ.
-
-        Parameters
-        ----------
-        fastqs : list of str
-            Read 1 FASTQ as the first element.
-        ncpus : int
-            STAR threads.
-        ram_gb : int
-            RAM for BAM sorting, in GB.
-        indexdir : str
-            STAR index directory.
-        outdir : str
-            Output directory.
-        """
-        super().__init__(ncpus, ram_gb, indexdir, outdir)
-        self.input_fastq = fastqs[0]
-        self.command = shlex.split(
-            self.format_command_string(type(self).command_string)
-        )
-
-    def format_command_string(self, input_string):
-        """Fill a STAR command template with this job's settings.
-
-        Parameters
-        ----------
-        input_string : str
-            Command template.
-
-        Returns
-        -------
-        str
-            The STAR command.
-        """
-        logger.info(
-            f"Formatting with arguments: \n{self.input_fastq} \n{self.ncpus} \n{self.ram_gb} \n{self.indexdir} \n{self.outdir}"
-        )
-
-        cmd = input_string.format(
-            infastq=self.input_fastq,
-            ncpus=self.ncpus,
-            ram_gb=self.ram_gb,
-            indexdir=self.indexdir,
-            outdir=self.outdir,
-        )
-        return cmd
 
 
 class PairedEndStarAligner(StarAligner):
@@ -419,20 +295,13 @@ def build_parser():
         "--fastqs_r1", nargs="+", help="Input gzipped fastq(s) belonging to read1"
     )
     parser.add_argument(
-        "--fastqs_r2", nargs="*", help="Input gzipped fastq(s) belonging to read2"
+        "--fastqs_r2", nargs="+", help="Input gzipped fastq(s) belonging to read2"
     )
     parser.add_argument(
         "--indexdir",
         type=str,
         help="Directory of the STAR index (genomeDir).",
         default="out",
-    )
-    parser.add_argument(
-        "--endedness",
-        type=str,
-        choices=["paired", "single"],
-        help="paired or single",
-        required=True,
     )
     parser.add_argument(
         "--bamroot",
@@ -461,21 +330,12 @@ def main(argv=None):
         Command-line arguments. Defaults to `sys.argv[1:]`.
     """
     args = build_parser().parse_args(argv)
-    merged_r2 = None
-    if len(args.fastqs_r1) > 1:
-        merged_r1 = concatenate_files(args.fastqs_r1)
-    else:
-        merged_r1 = args.fastqs_r1[0]
-    if args.endedness == "paired" and len(args.fastqs_r2) > 1:
-        merged_r2 = concatenate_files(args.fastqs_r2)
-    elif args.endedness == "paired" and len(args.fastqs_r2) == 1:
-        merged_r2 = args.fastqs_r2[0]
-    fastqs = [merged_r1]
-
-    if merged_r2 and args.endedness == "paired":
-        fastqs.append(merged_r2)
-    aligner = make_aligner(
-        args.endedness, fastqs, args.ncpus, args.ram_gb, args.indexdir, args.output_dir
+    fastqs = [
+        concatenate_files(reads) if len(reads) > 1 else reads[0]
+        for reads in (args.fastqs_r1, args.fastqs_r2)
+    ]
+    aligner = PairedEndStarAligner(
+        fastqs, args.ncpus, args.ram_gb, args.indexdir, args.output_dir
     )
     aligner.run()
     output_dir = args.output_dir
