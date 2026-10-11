@@ -66,8 +66,8 @@ rule align:
 
         python workflow/scripts/align.py \
             --output_dir {params.outdir:q} \
-            --fastqs_r1 {input.r1:q} \
-            --fastqs_r2 {input.r2:q} \
+            --fastq_r1 {input.r1:q} \
+            --fastq_r2 {input.r2:q} \
             --bamroot {wildcards.sample:q} \
             --indexdir {input.index_dir:q} \
             --ram_gb {params.ram_gb:q} \
