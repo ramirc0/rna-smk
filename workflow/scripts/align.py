@@ -8,10 +8,8 @@ import argparse
 import json
 import logging
 import os
+import re
 import subprocess
-
-from qc_utils import QCMetric
-from qc_utils.parsers import parse_flagstats, parse_starlog
 
 logger = logging.getLogger(__name__)
 
@@ -54,18 +52,80 @@ def run(command, **kwargs):
     return subprocess.run(command, check=True, **kwargs)
 
 
-def write_json(obj, path):
-    """Write an object as JSON.
+# JSON key of each `samtools flagstat` line that ENCODE's QC reports. ENCODE's
+# parser let "primary duplicates" overwrite "duplicates", so that line wins.
+FLAGSTAT_KEYS = {
+    "in total (QC-passed reads + QC-failed reads)": "total",
+    "primary duplicates": "duplicates",
+    "mapped": "mapped",
+    "paired in sequencing": "paired",
+    "read1": "read1",
+    "read2": "read2",
+    "properly paired": "paired_properly",
+    "with itself and mate mapped": "with_itself",
+    "singletons": "singletons",
+    "with mate mapped to a different chr": "diff_chroms",
+}
+
+
+def parse_flagstat(path):
+    """Read the counts and percentages of a `samtools flagstat` report.
 
     Parameters
     ----------
-    obj : object
-        JSON-serializable object.
+    path : str
+        Text report of `samtools flagstat`.
+
+    Returns
+    -------
+    dict of str to int or float
+        Counts, QC-failed counts and percentages, keyed as in `FLAGSTAT_KEYS`.
+    """
+    metrics = {}
+    with open(path) as f:
+        for line in f:
+            m = re.fullmatch(r"(\d+) \+ (\d+) (.+?)(?: \(([\d.]+)%.*\))?", line.strip())
+            key = m and FLAGSTAT_KEYS.get(m[3])
+            if key:
+                metrics[key] = int(m[1])
+                metrics[f"{key}_qc_failed"] = int(m[2])
+                if m[4]:
+                    metrics[f"{key}_pct"] = float(m[4])
+    return metrics
+
+
+def parse_star_log(path):
+    """Read the `name | value` lines of a STAR `Log.final.out`.
+
+    Parameters
+    ----------
+    path : str
+        STAR `Log.final.out`.
+
+    Returns
+    -------
+    dict of str to str
+        Each metric name and its value, both stripped.
+    """
+    with open(path) as f:
+        rows = [line.split("|") for line in f if "|" in line]
+    return {row[0].strip(): row[1].strip() for row in rows}
+
+
+def write_qc_json(name, metrics, path):
+    """Write metrics as ENCODE's `{name: {metric: value}}` QC JSON.
+
+    Parameters
+    ----------
+    name : str
+        Top-level key.
+    metrics : dict
+        Metrics, written with sorted keys.
     path : str
         JSON file to write.
     """
     with open(path, "w") as f:
-        json.dump(obj, f)
+        json.dump({name: metrics}, f, sort_keys=True)
 
 
 def build_parser():
@@ -147,10 +207,16 @@ def main(argv=None):
         flagstat = f"{prefix}_{kind}_flagstat.txt"
         with open(flagstat, "w") as f:
             run(["samtools", "flagstat", "-@", ncpus, f"{prefix}_{kind}.bam"], stdout=f)
-        qc = QCMetric(f"samtools_{kind}_flagstat", parse_flagstats(flagstat))
-        write_json(qc.to_ordered_dict(), f"{prefix}_{kind}_flagstat.json")
-    qc = QCMetric("star_log_qc", parse_starlog(f"{prefix}_Log.final.out"))
-    write_json(qc.to_ordered_dict(), f"{prefix}_Log.final.json")
+        write_qc_json(
+            f"samtools_{kind}_flagstat",
+            parse_flagstat(flagstat),
+            f"{prefix}_{kind}_flagstat.json",
+        )
+    write_qc_json(
+        "star_log_qc",
+        parse_star_log(f"{prefix}_Log.final.out"),
+        f"{prefix}_Log.final.json",
+    )
 
 
 if __name__ == "__main__":
