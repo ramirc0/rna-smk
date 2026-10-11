@@ -25,10 +25,9 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 
 ## Outputs must not drift
 
-- `workflow/envs/` pins match `clarity001/rna-smk:latest` as cached on 2025-07-10, the image behind the production results. bedtools cannot match: it is 2.31.1, because 2.30.0 needs zlib <1.3.
+- `workflow/envs/` pins match `clarity001/rna-smk:latest` as cached on 2025-07-10, the image behind the production results.
 - Never use bioconda RSEM. Its builds define `NDEBUG`, which drops the `assert(fscanf(...))` calls that read the Gibbs count vectors. The credibility intervals come out wrong and the step runs for hours.
 - Tag `post-template` is the equivalence baseline. Its outputs match `pre-template`, the last commit before the template port.
-- `bedtools` and `seqkit` in `workflow/envs/pixi.toml` are unused. Drop them with the next change to that workspace, because any change reruns every rule.
 - README.md "Known issues" lists legacy bugs kept on purpose. A fix changes outputs and needs the user's approval.
 
 ## Gotchas

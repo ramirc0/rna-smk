@@ -11,16 +11,12 @@ environments:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
     - url: https://conda.anaconda.org/bioconda/
-    indexes:
-    - https://pypi.org/simple
     packages:
       linux-64:
-      - conda: https://conda.anaconda.org/bioconda/linux-64/bedtools-2.31.1-h13024bc_3.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/linux-64/bigtools-0.5.6-hc1c3326_1.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/fastp-1.0.1-heae3180_0.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/linux-64/htslib-1.22-h566b1c6_0.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/linux-64/samtools-1.22-h96c455f_0.tar.bz2
-      - conda: https://conda.anaconda.org/bioconda/linux-64/seqkit-2.10.0-he881be0_1.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/linux-64/star-2.7.11b-h5ca1c30_6.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
@@ -71,24 +67,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytz-2026.5-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-      - conda_source: rsem[00059783] @ rsem
-      - pypi: https://files.pythonhosted.org/packages/71/08/df26ac456785618dcdd9b9ec70faa95b295d64196c6f2bbb1953e086ceb1/qc_utils-20.9.1-py3-none-any.whl
+      - conda_source: rsem[aada1534] @ rsem
 packages:
-- conda: https://conda.anaconda.org/bioconda/linux-64/bedtools-2.31.1-h13024bc_3.tar.bz2
-  sha256: d8b7aef31be37da761a87e1263ea00d62b67134b546f018067786aa6d3dccfac
-  md5: 99c4e90e82db906439e00beafb343d16
-  depends:
-  - bzip2 >=1.0.8,<2.0a0
-  - libgcc >=13
-  - liblzma >=5.6.3,<6.0a0
-  - libstdcxx >=13
-  - libzlib >=1.3.1,<2.0a0
-  license: MIT
-  run_exports:
-    weak:
-    - bedtools >=2.31.1,<3.0a0
-  size: 1607626
-  timestamp: 1733852519791
 - conda: https://conda.anaconda.org/bioconda/linux-64/bigtools-0.5.6-hc1c3326_1.conda
   sha256: 4537f1e86d0f03b29498e9522b61931f986df3738a089c168ce9c4cbff8d28b1
   md5: 4bb226fb17cce85992577aa6c650d783
@@ -153,17 +133,6 @@ packages:
     - samtools >=1.22,<2.0a0
   size: 502181
   timestamp: 1748907824610
-- conda: https://conda.anaconda.org/bioconda/linux-64/seqkit-2.10.0-he881be0_1.tar.bz2
-  sha256: 1ca6d0c271f014d1f3fd87a89e53f98f402fb3de78e2830ccf82d7f39f5bd8b4
-  md5: e0bc0299f3b1df4e735b27f008d35615
-  license: MIT
-  license_family: MIT
-  purls: []
-  run_exports:
-    weak:
-    - seqkit >=2.10.0,<3.0a0
-  size: 13761815
-  timestamp: 1754028764122
 - conda: https://conda.anaconda.org/bioconda/linux-64/star-2.7.11b-h5ca1c30_6.tar.bz2
   sha256: 3c56a30a18cb3fa69187a6c7fc179ba0f24eb52c44daeab311dd1cfafcf149e2
   md5: 4b532580508fb91bda50d00967222524
@@ -1141,7 +1110,7 @@ packages:
   run_exports: {}
   size: 118849
   timestamp: 1784250406640
-- conda_source: rsem[00059783] @ rsem
+- conda_source: rsem[aada1534] @ rsem
   variants:
     target_platform: linux-64
   depends:
@@ -1178,18 +1147,3 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.2.0-h934c35e_7.conda
   - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
   - conda: https://conda.anaconda.org/conda-forge/linux-64/zlib-1.3.2-h25fd6f3_3.conda
-- pypi: https://files.pythonhosted.org/packages/71/08/df26ac456785618dcdd9b9ec70faa95b295d64196c6f2bbb1953e086ceb1/qc_utils-20.9.1-py3-none-any.whl
-  name: qc-utils
-  version: 20.9.1
-  sha256: 5c92df5dd32c11d3a408ddb88401d2654e6cddff758bd966058b8a60546bd1fd
-  requires_dist:
-  - sphinx ; extra == 'dev'
-  - pytest ; extra == 'dev'
-  - pytest-cov ; extra == 'dev'
-  - pytest-mock ; extra == 'dev'
-  - pre-commit ; extra == 'dev'
-  - sphinx ; extra == 'docs'
-  - pytest ; extra == 'tests'
-  - pytest-cov ; extra == 'tests'
-  - pytest-mock ; extra == 'tests'
-  requires_python: '>=3.5'
