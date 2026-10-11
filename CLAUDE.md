@@ -43,7 +43,16 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 - Resources MUST be flat values. Never derive `mem_mb` or `runtime` from input size.
 - The `* attempt` retry scaling in `profiles/slurm/config.yaml` is intentional.
 - CLI `--set-threads` replaces the profile's whole mapping. Pass every rule.
+- A change to a rule's code or params reruns it in existing runs. Resume production runs after an update with `--rerun-triggers mtime`.
 - Production lives in `/zata/zippy/ramirezc/rna-smk` and `/data/zusers/ramirezc/rna-smk`. Treat both as read-only. The legacy config's `workdir` points there, and a legacy rerun deletes its STAR and RSEM indexes.
+
+## Differences from ENCODE v1.2.4
+
+- STAR align flags and RSEM flags match ENCODE. The steps around them differ.
+- Changes outputs: fastp trimming. STAR 2.7.11b, RSEM 1.3.3, samtools 1.22 (ENCODE: 2.5.1b, 1.2.31, 1.9). No ERCC/phiX spike-ins. GENCODE v49 basic (ENCODE: V29 plus tRNAs). RSEM seed 42 (ENCODE: 12345).
+- Changes bytes only: samtools compresses the transcriptome BAM. bigtools writes the bigWigs (ENCODE: kent tools).
+- Dropped: `rsem-sam-validator`, since STAR's default transcriptome output is RSEM-ready. Also Kallisto, reads by gene type, MAD QC, pBAM, several FASTQ pairs per replicate and single-end reads.
+- Added: strandedness inference. The genes-detected JSON has one flat key, not ENCODE's `QCMetricRecord` layout.
 
 ## Verifying a change
 

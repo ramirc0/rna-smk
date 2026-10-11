@@ -52,10 +52,6 @@ Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
 intervals change with `-p`, so another thread count gives other numbers. The
 local profile sets `cores: 44` for this reason.
 
-A workflow update that changes a rule's code or params makes Snakemake rerun
-that rule in an existing run. To keep finished outputs, resume such a run with
-`--rerun-triggers mtime`.
-
 ## Integration test
 
 `.tests/integration/` runs four ENCODE total RNA-seq replicates end to end on
@@ -66,9 +62,9 @@ full GRCh38. They are two replicates each of GM12878 (ENCSR000AEC) and K562
 snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
 ```
 
-Outputs go under `results/integration/`. Its reads are 101 bp, so it sets
-`sjdb_overhang: 100` and builds its own STAR and RSEM indexes there. It never
-touches `results/refs/`. Compare the QC with ENCODE's for the same replicates.
+Outputs go under `results/integration/`. The test builds its own STAR and RSEM
+indexes there, so it never touches `results/refs/`. Compare the QC with ENCODE's
+for the same replicates.
 
 ## Inputs
 
@@ -159,10 +155,9 @@ compute nodes cannot reach, and concurrent jobs would build it at once. Install
 it on the login node before the first run.
 
 Add a dependency with `pixi add <pkg>` in the workspace's directory. After a
-hand edit, run `pixi lock` there (rules use `locked=True`). Then check that
-`pixi install --locked` passes. Any change to a workspace's manifest or lock
-reruns every rule that uses it. So does moving the workdir, because the env hash
-includes the workspace's absolute path.
+hand edit, run `pixi lock` there (rules use `locked=True`). Any change to a
+workspace's manifest or lock reruns every rule that uses it. So does moving the
+workdir, because the env hash includes the workspace's absolute path.
 
 ## Conventions
 
@@ -179,30 +174,6 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 - Every rule has `log:` and `benchmark:`. Each names its pixi env in `software:`.
 - Docstrings follow numpydoc. `pixi run lint` checks the scripts with ruff and
   `numpydoc lint`. Neither tool parses `.smk` files.
-
-## Differences from ENCODE
-
-The STAR alignment flags and the RSEM flags match
-[ENCODE's pipeline](https://github.com/ENCODE-DCC/rna-seq-pipeline) v1.2.4.
-The steps around them differ:
-
-| Area | ENCODE v1.2.4 | rna-smk |
-|---|---|---|
-| Trimming | None | fastp |
-| STAR, RSEM, samtools | 2.5.1b, 1.2.31, 1.9 | 2.7.11b, 1.3.3, 1.22 |
-| STAR index | `--sjdbOverhang 100`, with ERCC and phiX spike-ins | `sequencing.sjdb_overhang`, no spike-ins |
-| Annotation | GENCODE V29 primary assembly plus tRNAs | The configured GTF. Production uses GENCODE v49 basic. |
-| Transcriptome BAM check | `rsem-sam-validator`, `convert-sam-for-rsem` if invalid | None. STAR's default `--quantTranscriptomeSAMoutput` writes it RSEM-ready. |
-| Transcriptome BAM compression | STAR, one thread, level 1 | samtools, all job threads, default level |
-| bigWig conversion | kent `bedSort` and `bedGraphToBigWig` | bigtools |
-| RSEM seed | 12345 | `sequencing.rsem_seed`, 42 in the template |
-| Genes-detected JSON | `QCMetricRecord` layout | One key, `number_of_genes_gt_1_TPM` |
-| Strandedness inference | None | RSeQC, report only |
-| Kallisto, reads by gene type, MAD QC, pBAM | Yes | No |
-| Several FASTQ pairs per replicate, single-end reads | Yes | No |
-
-The trimming, tool versions and annotation change every output. The BAM
-compression and the bigWig tools change only the file bytes.
 
 ## Known issues
 
