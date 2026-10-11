@@ -7,8 +7,8 @@ inference.
 
 > [!NOTE]
 > Alignment, signal and quantification steps come from the
-> [ENCODE RNA-seq pipeline](https://github.com/ENCODE-DCC/rna-seq-pipeline).
-> The script headers give attribution.
+> [ENCODE RNA-seq pipeline](https://github.com/ENCODE-DCC/rna-seq-pipeline)
+> by Otto Jolanki and the ENCODE DCC, under the MIT license.
 
 ## Layout
 
