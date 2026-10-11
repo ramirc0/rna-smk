@@ -73,14 +73,13 @@ snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
 
 Outputs go under `results/integration/`. Its reads are 101 bp, so it sets
 `sjdb_overhang: 100` and builds its own STAR and RSEM indexes there. It never
-touches `results/refs/`. Compare the QC with ENCODE's
-for the same replicates.
+touches `results/refs/`. Compare the QC with ENCODE's for the same replicates.
 
 ## Inputs
 
 The sample sheet is a TSV with a header row. `sample_id` names the sample. `r1`
-and `r2` are its raw paired-end FASTQs. Lines that start with `#` are comments. Each `sample_id`
-MUST be unique.
+and `r2` are its raw paired-end FASTQs. Lines that start with `#` are comments.
+Each `sample_id` MUST be unique.
 
 The references live in `resources/` (gitignored). Neither may be gzipped.
 
@@ -157,16 +156,18 @@ for pixi deployment and SLURM. The rule envs are two more pixi workspaces.
 production results. RSEM is the one exception to bioconda. Every bioconda build
 of RSEM compiles out its `assert()` calls, and some of them read input, so the
 credibility intervals go wrong. `workflow/envs/rsem/` builds the image's RSEM
-commit from source with pixi-build instead. `workflow/envs/qc/` runs the QC rules. Each `pixi.lock` pins
-every package. pixi MUST be on `PATH`. Jobs install the envs on first use.
+commit from source with pixi-build instead. `workflow/envs/qc/` runs the QC
+rules. Each `pixi.lock` pins every package. pixi MUST be on `PATH`. Jobs install
+the envs on first use.
 The production env is the exception. Its RSEM build clones GitHub, which some
 compute nodes cannot reach, and concurrent jobs would build it at once. Install
 it on the login node before the first run.
 
 Add a dependency with `pixi add <pkg>` in the workspace's directory. After a
-hand edit, run `pixi lock` there (rules use `locked=True`). Any change to a
-workspace's manifest or lock reruns every rule that uses it. So does moving the
-workdir, because the env hash includes the workspace's absolute path.
+hand edit, run `pixi lock` there (rules use `locked=True`). Then check that
+`pixi install --locked` passes. Any change to a workspace's manifest or lock
+reruns every rule that uses it. So does moving the workdir, because the env hash
+includes the workspace's absolute path.
 
 ## Conventions
 
