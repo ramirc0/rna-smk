@@ -4,7 +4,6 @@ import argparse
 import logging
 import re
 import subprocess
-import sys
 
 from scipy.stats import binomtest
 
@@ -60,38 +59,17 @@ def main(argv=None):
         text=True,
         check=True,
     )
-    lines = [line.strip() for line in infer_experiment.stdout.splitlines()[2:]]
-    endedness_pattern = r"This is (.*) Data"
-    fraction_pattern = r"Fraction of reads failed to determine: (.*)"
     forward_pattern = r'Fraction of reads explained by "1\+\+,1--,2\+-,2-\+": (.*)'
     reverse_pattern = r'Fraction of reads explained by "1\+-,1-\+,2\+\+,2--": (.*)'
-
-    logger.info("Parsing RSeQC infer_experiment.py output...")
-    forward = None
-    reverse = None
-    try:
-        for line in lines:
-            if re.match(endedness_pattern, line):
-                _ = re.search(endedness_pattern, line).group(1)
-            elif re.match(fraction_pattern, line):
-                _ = float(re.search(fraction_pattern, line).group(1))
-            elif re.match(forward_pattern, line):
-                forward = float(re.search(forward_pattern, line).group(1))
-            elif re.match(reverse_pattern, line):
-                reverse = float(re.search(reverse_pattern, line).group(1))
-    except Exception:
-        logger.exception("Could not parse RSeQC infer_experiment.py output.")
-        sys.exit(1)
+    for line in infer_experiment.stdout.splitlines():
+        if m := re.search(forward_pattern, line):
+            forward = float(m.group(1))
+        elif m := re.search(reverse_pattern, line):
+            reverse = float(m.group(1))
 
     forward_reads = int(total_reads * forward)
     reverse_reads = int(total_reads * reverse)
-    determinable_reads = forward_reads + reverse_reads
-
-    try:
-        p_value = binomtest(forward_reads, determinable_reads, p=0.5).pvalue
-    except Exception:
-        logger.exception("Could not calculate p-value.")
-        sys.exit(1)
+    p_value = binomtest(forward_reads, forward_reads + reverse_reads, p=0.5).pvalue
 
     logger.info(f"P-value: {p_value:f}")
     if p_value < 0.05:
