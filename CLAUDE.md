@@ -35,7 +35,6 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 - STAR and RSEM need `ulimit -n 65536`.
 - `SIGNAL_TRACKS` MUST NOT use `multiext()`. `expand()` rejects multiext-flagged paths.
 - `.smk` files are not linted. Keep helper docstrings numpydoc by hand.
-- Plots use poikilos `plain`. `pk.save_figure()` writes SVG and PNG. Rules MUST declare both outputs.
 - Resources MUST be flat values. Never derive `mem_mb` or `runtime` from input size.
 - The `* attempt` retry scaling in `profiles/slurm/config.yaml` is intentional.
 - CLI `--set-threads` replaces the profile's whole mapping. Pass every rule.

@@ -2,8 +2,8 @@
 
 A [Snakemake](https://github.com/snakemake/snakemake) pipeline for paired-end
 RNA-seq. Reads are trimmed and aligned with STAR. The alignments feed bigWig
-signal tracks, RSEM gene and isoform quantification, strandedness inference and
-MAD QC between replicates.
+signal tracks, RSEM gene and isoform quantification and strandedness
+inference.
 
 > [!NOTE]
 > Alignment, signal and quantification steps come from the
@@ -15,7 +15,7 @@ MAD QC between replicates.
 ```
 config/
   config.yaml.template   parameters + paths; copy to config.yaml (gitignored)
-  samples.example.tsv    one row per sample: sample_id, r1, r2, [group]
+  samples.example.tsv    one row per sample: sample_id, r1, r2
 workflow/
   Snakefile              includes the rule files, defines rule all
   rules/
@@ -24,7 +24,7 @@ workflow/
     align.smk            STAR index and alignment
     signals.smk          bigWig signal tracks
     gene_quantification.smk  RSEM index and quantification
-    qc.smk               gene model, strandedness, MAD QC
+    qc.smk               gene model, strandedness
   scripts/               argparse scripts, each with build_parser() + main()
   envs/pixi.toml         production rule env (pixi workspace)
   envs/qc/pixi.toml      QC rule env (a separate pixi workspace)
@@ -60,8 +60,7 @@ local profile sets `cores: 44` for this reason.
 
 `.tests/integration/` runs four ENCODE total RNA-seq replicates end to end on
 full GRCh38. They are two replicates each of GM12878 (ENCSR000AEC) and K562
-(ENCSR000AEL). Each experiment is one `group`, so the test also runs MAD QC.
-The inputs live on the Weng Lab cluster, so it runs only there.
+(ENCSR000AEL). The inputs live on the Weng Lab cluster, so it runs only there.
 
 ```bash
 snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
@@ -74,8 +73,7 @@ for the same replicates.
 ## Inputs
 
 The sample sheet is a TSV with a header row. `sample_id` names the sample. `r1`
-and `r2` are its raw paired-end FASTQs. The optional `group` column pairs
-replicates for MAD QC. Lines that start with `#` are comments. Each `sample_id`
+and `r2` are its raw paired-end FASTQs. Lines that start with `#` are comments. Each `sample_id`
 MUST be unique.
 
 The references live in `resources/` (gitignored). Neither may be gzipped.
@@ -128,9 +126,6 @@ QC, in `qc.smk`:
   binomial test on the strand fractions gives `forward`, `reverse` or
   `unstranded`. The result is a report only. `sequencing.strand_direction`
   still drives RSEM and the signal tracks.
-- `mad_qc` compares the gene FPKMs of two samples in the same `group`. It writes
-  the MAD and the SD of their log2 ratios, their Pearson correlation and an MA
-  plot.
 
 ## Outputs
 
@@ -146,7 +141,6 @@ RSEM index and gene model do not depend on the run. They go to
 | `signals/` | bigWigs: `plusAll`, `plusUniq`, `minusAll`, `minusUniq`, or `all` and `uniq` |
 | `rsem_quant/` | `.genes.results`, `.isoforms.results`, genes-detected JSON |
 | `strandedness/` | `forward`, `reverse` or `unstranded` in a TXT |
-| `mad_qc/` | One JSON and MA plot (SVG, PNG) per other sample in the group |
 
 ## Environment
 
@@ -175,8 +169,6 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 - `input:` and `output:` are literal path strings. All paths are relative.
 - Rules tee logs to file and terminal (`exec &> >(tee {log:q})`).
 - Every rule has `log:` and `benchmark:`. Each names its pixi env in `software:`.
-- Plots use [poikilos](https://github.com/ramirc0/poikilos) with the `plain`
-  theme. `pk.save_figure()` writes the SVG and PNG pair. Rules declare both.
 - Docstrings follow numpydoc. `pixi run lint` checks the scripts with ruff and
   `numpydoc lint`. Neither tool parses `.smk` files.
 
@@ -203,9 +195,6 @@ A fix changes outputs.
   the full path. A `run_id` or sample ID that contains `.bg` breaks it.
 - `get_strandedness.py` runs its binomial test on millions of reads, so almost
   any imbalance counts as stranded. Its regexes match only paired-end output.
-- `mad_qc.py` takes the upper middle value as the median of an even count. Its
-  `Standard_deviation` is the root mean square of the log ratios, not a
-  centered SD. Both follow the Rust `madqc` tool it replaces.
 
 ## References
 

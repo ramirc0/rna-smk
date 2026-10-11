@@ -11,8 +11,6 @@ environments:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
     - url: https://conda.anaconda.org/bioconda/
-    indexes:
-    - https://pypi.org/simple
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/bioconda/linux-64/bx-python-0.15.1-py312hedfda1a_0.conda
@@ -248,7 +246,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/userpath-1.9.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-21.14.6-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
-      - pypi: git+https://github.com/ramirc0/poikilos#81cd1cb24b293722a9735377de00e9235f09270d
 packages:
 - conda: https://conda.anaconda.org/bioconda/linux-64/bx-python-0.15.1-py312hedfda1a_0.conda
   sha256: ac0f4a58a2823d05ded6ced7e425efe441da507416e0e045a53e2e09f41db162
@@ -3992,10 +3989,3 @@ packages:
   run_exports: {}
   size: 24839
   timestamp: 1791091060207
-- pypi: git+https://github.com/ramirc0/poikilos#81cd1cb24b293722a9735377de00e9235f09270d
-  name: poikilos
-  version: 0.1.0
-  requires_dist:
-  - matplotlib>=3.11
-  - adjusttext>=1.4.0 ; extra == 'labels'
-  requires_python: '>=3.11'

@@ -1,6 +1,5 @@
 # Config, sample sheet, and shared helpers.
 
-from itertools import combinations
 from pathlib import Path
 
 import polars as pl
@@ -53,7 +52,7 @@ _SHEET = Path(config["samples"])
 if not _SHEET.exists():
     raise WorkflowError(
         f"Sample sheet not found: {_SHEET}\n"
-        "Columns: sample_id, r1, r2, [group]; see config/samples.example.tsv."
+        "Columns: sample_id, r1, r2; see config/samples.example.tsv."
     )
 
 # All-string read so empty cells are "" (absent), not a type error.
@@ -85,18 +84,10 @@ def _column(name):
 SAMPLES = _manifest.get_column("sample_id").to_list()
 R1_OF = _column("r1")
 R2_OF = _column("r2")
-GROUP_OF = _column("group")
 
 if not SAMPLES:
     raise WorkflowError(f"Sample sheet {_SHEET} has no rows.")
 
-_MEMBERS = {}
-for _sample, _group in GROUP_OF.items():
-    if _group:
-        _MEMBERS.setdefault(_group, []).append(_sample)
-MAD_QC_PAIRS = [pair for members in _MEMBERS.values() for pair in combinations(members, 2)]
-
 
 wildcard_constraints:
     sample=r"[A-Za-z0-9][A-Za-z0-9_.-]*",
-    other=r"[A-Za-z0-9][A-Za-z0-9_.-]*",
