@@ -25,7 +25,6 @@ STAR_OPTIONS = [
     "--alignIntronMin", "20",
     "--alignIntronMax", "1000000",
     "--alignMatesGapMax", "1000000",
-    "--outSAMheaderCommentFile", "COfile.txt",
     "--outSAMheaderHD", "@HD", "VN:1.4", "SO:coordinate",
     "--outSAMunmapped", "Within",
     "--outFilterType", "BySJout",

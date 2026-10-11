@@ -193,9 +193,6 @@ A fix changes outputs.
   leave a bad output in a job that reports success.
 - The `align` rule's `samtools quickcheck` only logs. A corrupt BAM does not
   fail the job.
-- `align.py` passes `--outSAMheaderCommentFile COfile.txt`, a path relative to
-  the working directory. A `COfile.txt` in the repository root adds `@CO`
-  lines to every BAM.
 - `bam_to_signals.py` names sorted bedGraphs with `str.replace('.bg', ...)` on
   the full path. A `run_id` or sample ID that contains `.bg` breaks it.
 - `get_strandedness.py` runs its binomial test on millions of reads, so almost
