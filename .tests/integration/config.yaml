@@ -6,7 +6,7 @@ run_id: encode-integration
 
 references:
   fasta: /data/zusers/ramirezc/atac-smk/resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
-  gtf: /data/zusers/ramirezc/static/gencode.v49.basic.annotation.gtf
+  gtf: /data/zusers/ramirezc/static/hg38/annotation/gencode.v49.basic.annotation.gtf
 
 sequencing:
   is_stranded: true
