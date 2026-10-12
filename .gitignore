@@ -248,3 +248,4 @@ MOHD_RESULTS_*
 old-pipeline.wdl
 rna-seq-pipeline
 RSEM-Quant-Manifest.txt
+.claude/CLAUDE.md
