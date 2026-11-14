@@ -1,11 +1,16 @@
 # rna-smk
 
 A [Snakemake](https://github.com/snakemake/snakemake) pipeline for paired-end
-RNA-seq. Reads are trimmed and aligned with STAR. The alignments feed bigWig
-signal tracks, RSEM gene and isoform quantification and strandedness
-inference.
+RNA-seq.
 
-## Layout
+## Description
+
+Reads are trimmed with fastp and aligned with STAR. The alignments feed bigWig
+signal tracks, RSEM gene and isoform quantification and strandedness
+inference. Three pixi workspaces split the launcher from the production and QC
+rule envs, and profiles cover local and SLURM execution.
+
+### Layout
 
 ```
 config/
@@ -31,67 +36,7 @@ pixi.toml                launcher env + lint task
 pyproject.toml           ruff + numpydoc config
 ```
 
-## Running
-
-```bash
-cp config/config.yaml.template config/config.yaml  # then edit
-cp config/samples.example.tsv config/samples.tsv   # then edit
-pixi shell                                         # launcher env
-snakemake -n -p --profile profiles/local           # dry run
-snakemake --profile profiles/local                 # local
-snakemake --profile profiles/slurm                 # SLURM
-```
-
-Snakemake MUST run from the repository root. The SLURM profile holds Weng Lab
-partitions. Adapt them for another cluster with the
-[SLURM executor docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html).
-Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
-
-`rsem_quant` MUST run with 44 threads. RSEM's Gibbs sampling and credibility
-intervals change with `-p`, so another thread count gives other numbers. The
-local profile sets `cores: 44` for this reason.
-
-## Integration test
-
-`.tests/integration/` runs four ENCODE total RNA-seq replicates end to end on
-full GRCh38. They are two replicates each of GM12878 (ENCSR000AEC) and K562
-(ENCSR000AEL). The inputs live on the Weng Lab cluster, so it runs only there.
-
-```bash
-snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
-```
-
-Outputs go under `results/integration/`. The test builds its own STAR and RSEM
-indexes there, so it never touches `results/refs/`. Compare the QC with ENCODE's
-for the same replicates.
-
-## Inputs
-
-The sample sheet is a TSV with a header row. `sample_id` names the sample. `r1`
-and `r2` are its raw paired-end FASTQs. Lines that start with `#` are comments.
-Each `sample_id` MUST be unique.
-
-The references live in `resources/` (gitignored). Neither may be gzipped.
-
-- the GRCh38 FASTA, no-alt analysis set
-- a GENCODE GTF, e.g. `gencode.v49.basic.annotation.gtf`
-
-## Configuration
-
-| Key | Meaning |
-|---|---|
-| `samples` | Sample sheet path. |
-| `outdir` | Results root. |
-| `run_id` | Run name. Outputs go under `<outdir>/<run_id>/`. |
-| `pixi_env` | Environment of `workflow/envs/pixi.toml` that the production rules use. |
-| `references.fasta` | Reference genome FASTA. |
-| `references.gtf` | Gene annotation GTF, for STAR, RSEM and the strandedness gene model. |
-| `sequencing.is_stranded` | Write plus and minus strand signal tracks. |
-| `sequencing.strand_direction` | `forward`, `reverse` or `unstranded`. Sets RSEM's `--forward-prob`. |
-| `sequencing.sjdb_overhang` | STAR's `--sjdbOverhang`: read length minus 1. `<outdir>/refs/` holds one index, so a run with another value MUST use its own `outdir`. |
-| `sequencing.rsem_seed` | RSEM random seed. |
-
-## Steps
+### Steps
 
 Preprocessing and alignment, in `preprocess.smk` and `align.smk`:
 
@@ -122,7 +67,7 @@ QC, in `qc.smk`:
   `unstranded`. The result is a report only. `sequencing.strand_direction`
   still drives RSEM and the signal tracks.
 
-## Outputs
+### Outputs
 
 Each sample writes to `<outdir>/<run_id>/<sample>/<step>/`. The STAR index,
 RSEM index and gene model do not depend on the run. They go to
@@ -137,27 +82,15 @@ RSEM index and gene model do not depend on the run. They go to
 | `rsem_quant/` | `.genes.results`, `.isoforms.results`, genes-detected JSON |
 | `strandedness/` | `forward`, `reverse` or `unstranded` in a TXT |
 
-## Environment
+### Known issues
 
-The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
-for pixi deployment and SLURM. The rule envs are two more pixi workspaces.
-`workflow/envs/` runs the production rules. Its tool versions match
-`clarity001/rna-smk:latest` as cached on 2025-07-10, the image that produced the
-production results. RSEM is the one exception to bioconda. Every bioconda build
-of RSEM compiles out its `assert()` calls, and some of them read input, so the
-credibility intervals go wrong. `workflow/envs/rsem/` builds the image's RSEM
-commit from source with pixi-build instead. `workflow/envs/qc/` runs the QC
-rules. Each `pixi.lock` pins every package. pixi MUST be on `PATH`. An `onstart`
-hook installs both envs on the submit host before the first job. Parallel SLURM
-jobs would otherwise race to install them, and the RSEM build clones GitHub,
-which some compute nodes cannot reach.
+These legacy bugs stay to keep outputs identical to the production results.
+A fix changes outputs.
 
-Add a dependency with `pixi add <pkg>` in the workspace's directory. After a
-hand edit, run `pixi lock` there (rules use `locked=True`). Any change to a
-workspace's manifest or lock reruns every rule that uses it. So does moving the
-workdir, because the env hash includes the workspace's absolute path.
+- `get_strandedness.py` runs its binomial test on millions of reads, so almost
+  any imbalance counts as stranded.
 
-## Conventions
+### Conventions
 
 The workflow follows the
 [Nextstrain Snakemake style guide](https://docs.nextstrain.org/en/latest/reference/snakemake-style-guide.html)
@@ -172,19 +105,129 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 - Shell blocks end with `sync {output:q}`. On a shared filesystem, Snakemake's
   first stat of an output from the submit host can otherwise wait for the
   writing node to flush it.
+- Scripts are called as `{workflow.basedir:q}/scripts/x.py`, so the workflow
+  runs from any `--directory`.
 - Every rule has `log:` and `benchmark:`. Each names its pixi env in `software:`.
 - Docstrings follow numpydoc. `pixi run lint` checks the scripts with ruff and
   `numpydoc lint`. Neither tool parses `.smk` files.
 
-## Known issues
+## Getting Started
 
-These legacy bugs stay to keep outputs identical to the production results.
-A fix changes outputs.
+### Dependencies
 
-- `get_strandedness.py` runs its binomial test on millions of reads, so almost
-  any imbalance counts as stranded.
+- Linux x86-64, the only platform in the pixi workspaces.
+- [pixi](https://pixi.sh) on `PATH`.
+- Network access to GitHub. Snakemake and its pixi and SLURM plugins install
+  from git, and RSEM builds from source.
+- A SLURM cluster for `profiles/slurm`.
+- A GRCh38 FASTA and a GENCODE GTF. See Inputs.
 
-## References
+### Installing
+
+```bash
+git clone https://github.com/ramirc0/rna-smk.git
+cd rna-smk
+pixi install                                       # launcher env
+cp config/config.yaml.template config/config.yaml  # then edit
+cp config/samples.example.tsv config/samples.tsv   # then edit
+```
+
+The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
+for pixi deployment and SLURM. The rule envs are two more pixi workspaces.
+`workflow/envs/` runs the production rules. Its tool versions match
+`clarity001/rna-smk:latest` as cached on 2025-07-10, the image that produced the
+production results. RSEM is the one exception to bioconda. Every bioconda build
+of RSEM compiles out its `assert()` calls, and some of them read input, so the
+credibility intervals go wrong. `workflow/envs/rsem/` builds the image's RSEM
+commit from source with pixi-build instead. `workflow/envs/qc/` runs the QC
+rules. Each `pixi.lock` pins every package. An `onstart` hook installs both
+envs on the submit host before the first job. Parallel SLURM jobs would
+otherwise race to install them, and the RSEM build clones GitHub, which some
+compute nodes cannot reach.
+
+Add a dependency with `pixi add <pkg>` in the workspace's directory. After a
+hand edit, run `pixi lock` there (rules use `locked=True`).
+
+### Inputs
+
+The sample sheet is a TSV with a header row. `sample_id` names the sample. `r1`
+and `r2` are its raw paired-end FASTQs. Lines that start with `#` are comments.
+Each `sample_id` MUST be unique.
+
+The references live in `resources/` (gitignored). Neither may be gzipped.
+
+- the GRCh38 FASTA, no-alt analysis set
+- a GENCODE GTF, e.g. `gencode.v49.basic.annotation.gtf`
+
+### Configuration
+
+| Key | Meaning |
+|---|---|
+| `samples` | Sample sheet path. |
+| `outdir` | Results root. |
+| `run_id` | Run name. Outputs go under `<outdir>/<run_id>/`. |
+| `pixi_env` | Environment of `workflow/envs/pixi.toml` that the production rules use. |
+| `references.fasta` | Reference genome FASTA. |
+| `references.gtf` | Gene annotation GTF, for STAR, RSEM and the strandedness gene model. |
+| `sequencing.is_stranded` | Write plus and minus strand signal tracks. |
+| `sequencing.strand_direction` | `forward`, `reverse` or `unstranded`. Sets RSEM's `--forward-prob`. |
+| `sequencing.sjdb_overhang` | STAR's `--sjdbOverhang`: read length minus 1. `<outdir>/refs/` holds one index, so a run with another value MUST use its own `outdir`. |
+| `sequencing.rsem_seed` | RSEM random seed. |
+
+### Executing program
+
+```bash
+pixi shell                                  # launcher env
+snakemake -n -p --profile profiles/local    # dry run
+snakemake --profile profiles/local          # local
+snakemake --profile profiles/slurm          # SLURM
+pixi run lint                               # ruff + numpydoc
+```
+
+Snakemake MUST run from the repository root. The SLURM profile holds Weng Lab
+partitions. Adapt them for another cluster with the
+[SLURM executor docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html).
+Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
+
+`rsem_quant` MUST run with 44 threads. RSEM's Gibbs sampling and credibility
+intervals change with `-p`, so another thread count gives other numbers. The
+local profile sets `cores: 44` for this reason.
+
+### Testing
+
+`.tests/integration/` runs four ENCODE total RNA-seq replicates end to end on
+full GRCh38. They are two replicates each of GM12878 (ENCSR000AEC) and K562
+(ENCSR000AEL). The inputs live on the Weng Lab cluster, so it runs only there.
+
+```bash
+snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
+```
+
+Outputs go under `results/integration/`. The test builds its own STAR and RSEM
+indexes there, so it never touches `results/refs/`. Compare the QC with ENCODE's
+for the same replicates.
+
+## Help
+
+- Every rule reran. Any change to a workspace's manifest or lock reruns every
+  rule that uses it. So does moving the workdir, because the env hash includes
+  the workspace's absolute path.
+- A job failed. The profiles set `--show-failed-logs`. The full log sits under
+  `logs/<run_id>/`.
+- A SLURM node keeps failing jobs. List it under `slurm-exclude-failed-nodes`
+  in `profiles/slurm/config.yaml`.
+
+If you have any questions or would like to provide constructive feedback, please open an issue or reach out to the MOHD DACC.
+
+## Authors
+
+Christian Ramirez ([@ramirc0](https://github.com/ramirc0))
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
+
+## Acknowledgments
 
 Chen, Shifu. 2025. “Fastp 1.0: An Ultra‐fast All‐round Tool for FASTQ Data Quality Control and Preprocessing.” iMeta 4 (5). https://doi.org/10.1002/imt2.70078.
 
@@ -199,7 +242,3 @@ Li, Bo, and Colin N. Dewey. 2011. “RSEM: Accurate Transcript Quantification fr
 Mölder, Felix, Kim Philipp Jablonski, Brice Letcher, et al. 2021. “Sustainable Data Analysis with Snakemake.” F1000Research 10 (April): 33. https://doi.org/10.12688/f1000research.29032.2.
 
 Wang, Liguo, Shengqin Wang, and Wei Li. 2012. “RSeQC: Quality Control of RNA-Seq Experiments.” Bioinformatics (Oxford, England) 28 (16): 2184–85. https://doi.org/10.1093/bioinformatics/bts356.
-
-## Questions
-
-If you have any questions or would like to provide constructive feedback, please open an issue or reach out to the MOHD DACC.
