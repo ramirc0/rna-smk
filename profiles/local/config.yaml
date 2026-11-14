@@ -7,6 +7,9 @@ software-deployment-cache-prefix: ~/.cache/snakemake/software
 
 # rsem_quant needs 44 threads, because RSEM output depends on -p.
 cores: 44
+# Job selection reruns once per timespan and stats every ready job's input on
+# NFS. At 1s, a driver with more ready jobs than slots pins a login-node core.
+max-jobs-per-timespan: 50/10s
 printshellcmds: true
 rerun-incomplete: true
 keep-going: true
