@@ -222,10 +222,9 @@ __marimo__/
 # Snakemake template
 logs
 results
-config/*.tsv
-!config/samples.example.tsv
-# copy from config.yaml.template, then edit
-config/config.yaml
+# Run configs and sheets stay local. Only the templates are tracked.
+config/*
+!config/*.template
 .snakemake
 scratch
 .conda

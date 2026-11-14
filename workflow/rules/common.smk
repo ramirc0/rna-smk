@@ -60,7 +60,7 @@ _SHEET = Path(config["samples"])
 if not _SHEET.exists():
     raise WorkflowError(
         f"Sample sheet not found: {_SHEET}\n"
-        "Columns: sample_id, r1, r2; see config/samples.example.tsv."
+        "Columns: sample_id, r1, r2; see config/samples.tsv.template."
     )
 
 # All-string read so empty cells are "" (absent), not a type error.

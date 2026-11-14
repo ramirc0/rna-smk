@@ -14,8 +14,9 @@ rule envs, and profiles cover local and SLURM execution.
 
 ```
 config/
-  config.yaml.template   parameters + paths; copy to config.yaml (gitignored)
-  samples.example.tsv    one row per sample: sample_id, r1, r2
+  config.yaml.template   parameters + paths; copy to <run_id>/config.yaml
+  samples.tsv.template   one row per sample: sample_id, r1, r2
+  <run_id>/              one run's config.yaml and samples.tsv (gitignored)
 workflow/
   Snakefile              includes the rule files, defines rule all
   rules/
@@ -127,9 +128,10 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 ```bash
 git clone https://github.com/ramirc0/rna-smk.git
 cd rna-smk
-pixi install                                       # launcher env
-cp config/config.yaml.template config/config.yaml  # then edit
-cp config/samples.example.tsv config/samples.tsv   # then edit
+pixi install                                                # launcher env
+mkdir -p config/<run_id>
+cp config/config.yaml.template config/<run_id>/config.yaml  # then edit
+cp config/samples.tsv.template config/<run_id>/samples.tsv  # then edit
 ```
 
 The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
@@ -176,12 +178,16 @@ The references live in `resources/` (gitignored). Neither may be gzipped.
 
 ### Executing program
 
+Each run keeps its config and sample sheet in `config/<run_id>/`. Name the run
+`<start date>-<slug>`, e.g. `2026-11-13-encode-k562`. Set `run_id` and
+`samples` in the config to match.
+
 ```bash
-pixi shell                                  # launcher env
-snakemake -n -p --profile profiles/local    # dry run
-snakemake --profile profiles/local          # local
-snakemake --profile profiles/slurm          # SLURM
-pixi run lint                               # ruff + numpydoc
+pixi shell                                                  # launcher env
+snakemake -n -p --profile profiles/local --configfile config/<run_id>/config.yaml  # dry run
+snakemake --profile profiles/local --configfile config/<run_id>/config.yaml        # local
+snakemake --profile profiles/slurm --configfile config/<run_id>/config.yaml        # SLURM
+pixi run lint                                               # ruff + numpydoc
 ```
 
 Snakemake MUST run from the repository root. The SLURM profile holds Weng Lab
