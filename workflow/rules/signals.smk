@@ -22,7 +22,7 @@ rule bam_to_signals:
         r"""
         exec &> >(tee {log:q})
 
-        python workflow/scripts/bam_to_signals.py \
+        python {workflow.basedir:q}/scripts/bam_to_signals.py \
             --threads {threads:q} \
             --output_dir {params.outdir:q} \
             --bamfile {input.genome_bam:q} \

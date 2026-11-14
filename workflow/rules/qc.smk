@@ -38,7 +38,7 @@ rule strandedness:
         r"""
         exec &> >(tee {log:q})
 
-        python workflow/scripts/get_strandedness.py \
+        python {workflow.basedir:q}/scripts/get_strandedness.py \
             --bam {input.bam:q} \
             --gene_model {input.gene_model:q} \
             --output {output:q}

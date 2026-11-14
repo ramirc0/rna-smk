@@ -62,7 +62,7 @@ rule align:
 
         ulimit -n 65536
 
-        python workflow/scripts/align.py \
+        python {workflow.basedir:q}/scripts/align.py \
             --output_dir {params.outdir:q} \
             --fastq_r1 {input.r1:q} \
             --fastq_r2 {input.r2:q} \

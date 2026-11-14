@@ -56,7 +56,7 @@ rule rsem_quant:
 
         ulimit -n 65536
 
-        python workflow/scripts/rsem.py \
+        python {workflow.basedir:q}/scripts/rsem.py \
             --rsem_index {params.index:q} \
             --anno_bam {input.anno_bam:q} \
             --read_strand {params.strand_direction:q} \
