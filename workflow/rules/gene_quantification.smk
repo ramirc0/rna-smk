@@ -27,6 +27,8 @@ rule rsem_index:
             -p {threads:q} \
             {input.fasta:q} \
             {params.prefix:q}
+
+        sync {output:q}
         """
 
 
@@ -64,4 +66,6 @@ rule rsem_quant:
             --ncpus {threads:q} \
             --mem_mb {resources.mem_mb:q} \
             --outprefix {params.outprefix:q}
+
+        sync {output:q}
         """

@@ -30,6 +30,8 @@ rule index:
             --genomeFastaFiles {input.fasta:q} \
             --sjdbGTFfile {input.gtf:q} \
             --sjdbOverhang {params.sjdb_overhang:q}
+
+        sync {output:q}
         """
 
 
@@ -72,4 +74,6 @@ rule align:
             --ncpus {threads:q}
 
         samtools quickcheck {output.genome_bam:q} {output.anno_bam:q}
+
+        sync {output:q}
         """

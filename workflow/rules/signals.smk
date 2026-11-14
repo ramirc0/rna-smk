@@ -29,4 +29,6 @@ rule bam_to_signals:
             --chrom_sizes {input.chromsizes:q} \
             --strandedness {params.strandedness:q} \
             --bamroot {wildcards.sample:q}_genome
+
+        sync {output:q}
         """

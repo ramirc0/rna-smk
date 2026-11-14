@@ -19,6 +19,8 @@ rule gene_model:
 
         gtfToGenePred -genePredExt {input:q} stdout \
             | genePredToBed stdin {output:q}
+
+        sync {output:q}
         """
 
 
@@ -42,5 +44,7 @@ rule strandedness:
             --bam {input.bam:q} \
             --gene_model {input.gene_model:q} \
             --output {output:q}
+
+        sync {output:q}
         """
 

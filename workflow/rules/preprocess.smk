@@ -28,4 +28,6 @@ rule fastp:
             -h {output.html:q} \
             -j {output.json:q} \
             -w {threads:q}
+
+        sync {output:q}
         """
