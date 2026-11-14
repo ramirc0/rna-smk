@@ -2,6 +2,7 @@
 name = "rna-smk-envs"
 channels = ["conda-forge", "bioconda"]
 platforms = ["linux-64"]
+exclude-newer = "7d"
 preview = ["pixi-build"]
 
 # Versions match clarity001/rna-smk:latest as cached on 2025-07-10, the image
@@ -16,3 +17,12 @@ samtools = "==1.22"
 star = "==2.7.11b"
 numpy = "==2.3.1"
 pandas = "==2.3.1"
+
+[exclude-newer]
+ca-certificates = "0d"
+certifi = "0d"
+pip = "0d"
+
+[pypi-exclude-newer]
+certifi = "0d"
+pip = "0d"
