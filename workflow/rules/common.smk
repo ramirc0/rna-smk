@@ -48,6 +48,14 @@ SOFTWARE_ENV = pixi(workspace="../envs", env=config["pixi_env"], locked=True)
 QC_ENV = pixi(workspace="../envs/qc", env="default", locked=True)
 
 
+# The pixi plugin installs the envs inside each job. Parallel SLURM jobs then race
+# on a fresh or relocked env, and RSEM's source build clones GitHub, which some
+# compute nodes cannot reach. Install both workspaces once before any job starts.
+onstart:
+    shell("pixi install --manifest-path {workflow.basedir:q}/envs/pixi.toml --all --locked")
+    shell("pixi install --manifest-path {workflow.basedir:q}/envs/qc/pixi.toml --all --locked")
+
+
 _SHEET = Path(config["samples"])
 if not _SHEET.exists():
     raise WorkflowError(
