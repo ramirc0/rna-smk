@@ -29,7 +29,8 @@ rule strandedness:
         bam=f"{OUTDIR}/{{sample}}/align/{{sample}}_genome.bam",
         gene_model=GENE_MODEL,
     output:
-        f"{OUTDIR}/{{sample}}/strandedness/{{sample}}.txt",
+        call=f"{OUTDIR}/{{sample}}/strandedness/{{sample}}.txt",
+        fractions=f"{OUTDIR}/{{sample}}/strandedness/{{sample}}_fractions.tsv",
     log:
         f"{LOGDIR}/strandedness/{{sample}}.txt",
     benchmark:
@@ -43,7 +44,8 @@ rule strandedness:
         python {workflow.basedir:q}/scripts/get_strandedness.py \
             --bam {input.bam:q} \
             --gene_model {input.gene_model:q} \
-            --output {output:q}
+            --output {output.call:q} \
+            --fractions {output.fractions:q}
 
         sync {output:q}
         """

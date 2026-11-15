@@ -25,6 +25,12 @@ def build_parser():
         "--gene_model", required=True, help="BED12 gene model for infer_experiment.py."
     )
     parser.add_argument("--output", required=True, help="Text file to write.")
+    parser.add_argument(
+        "--fractions",
+        required=True,
+        help="TSV to write: infer_experiment.py's forward, reverse and "
+        "undetermined fractions.",
+    )
     return parser
 
 
@@ -61,11 +67,17 @@ def main(argv=None):
     )
     forward_pattern = r'Fraction of reads explained by "1\+\+,1--,2\+-,2-\+": (.*)'
     reverse_pattern = r'Fraction of reads explained by "1\+-,1-\+,2\+\+,2--": (.*)'
+    undetermined_pattern = r"Fraction of reads failed to determine: (.*)"
     for line in infer_experiment.stdout.splitlines():
         if m := re.search(forward_pattern, line):
             forward = float(m.group(1))
         elif m := re.search(reverse_pattern, line):
             reverse = float(m.group(1))
+        elif m := re.search(undetermined_pattern, line):
+            undetermined = float(m.group(1))
+    with open(args.fractions, "w") as f:
+        print("forward\treverse\tundetermined", file=f)
+        print(f"{forward}\t{reverse}\t{undetermined}", file=f)
 
     forward_reads = int(total_reads * forward)
     reverse_reads = int(total_reads * reverse)
