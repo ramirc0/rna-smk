@@ -42,8 +42,9 @@ set-resources:              # tune from benchmarks/ TSVs after a real run
     mem_mb: 4000 * attempt
   index:
     mem_mb: 64000 * attempt
+  # A 44-CPU job waits for a whole free slot. 5days holds nodes that 12hours lacks.
   align:
-    slurm_partition: 12hours
+    slurm_partition: "12hours,5days"
     runtime: 720m
     mem_mb: 64000 * attempt
   bam_to_signals:
@@ -53,7 +54,7 @@ set-resources:              # tune from benchmarks/ TSVs after a real run
   rsem_index:
     mem_mb: 16000 * attempt
   rsem_quant:
-    slurm_partition: 12hours
+    slurm_partition: "12hours,5days"
     runtime: 720m
     mem_mb: 80000 * attempt
 
