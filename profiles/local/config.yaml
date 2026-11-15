@@ -5,7 +5,7 @@ software-deployment-method:
 # One copy per user instead of one per workdir.
 software-deployment-cache-prefix: ~/.cache/snakemake/software
 
-# rsem_quant needs 44 threads, because RSEM output depends on -p.
+# Fewer cores scale rules' threads down, and RSEM's Gibbs output depends on -p.
 cores: 44
 # Job selection reruns once per timespan and stats every ready job's input on
 # NFS. At 1s, a driver with more ready jobs than slots pins a login-node core.
@@ -27,7 +27,7 @@ set-threads:
   align: 44
   bam_to_signals: 4
   rsem_index: 44
-  rsem_quant: 44
+  rsem_quant: 22
   gene_model: 1
   strandedness: 1
 

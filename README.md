@@ -193,9 +193,10 @@ partitions. Adapt them for another cluster with the
 [SLURM executor docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html).
 Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
 
-`rsem_quant` MUST run with 44 threads. RSEM's Gibbs sampling and credibility
-intervals change with `-p`, so another thread count gives other numbers. The
-local profile sets `cores: 44` for this reason.
+`rsem_quant` runs with 22 threads. RSEM's Gibbs sampling and credibility
+intervals change with `-p`, so every sample of a cohort MUST use the same
+count. The expected counts, TPM and FPKM do not change with `-p`. With fewer
+than 22 cores, Snakemake scales the threads down and changes the Gibbs output.
 
 ### Testing
 

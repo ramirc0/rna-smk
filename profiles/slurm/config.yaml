@@ -26,14 +26,14 @@ default-resources:
   mem_mb: 8000 * attempt
   slurm_extra: "--cpu-freq=High-High:Performance"
 
-# rsem_quant needs 44 threads, because RSEM output depends on -p.
+# RSEM's Gibbs output depends on -p. Keep rsem_quant's count fixed within a cohort.
 set-threads:
   fastp: 8
   index: 44
   align: 44
   bam_to_signals: 4
   rsem_index: 44
-  rsem_quant: 44
+  rsem_quant: 22
   gene_model: 1
   strandedness: 1
 
