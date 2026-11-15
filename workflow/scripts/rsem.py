@@ -7,6 +7,7 @@ import argparse
 import json
 import logging
 import subprocess
+import tempfile
 
 import pandas as pd
 
@@ -49,23 +50,27 @@ def main(argv=None):
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s: %(message)s",
     )
-    rsem_call = [
-        "rsem-calculate-expression",
-        "--bam",
-        "--estimate-rspd",
-        "--calc-ci",
-        "--seed", str(args.rnd_seed),
-        "-p", str(args.ncpus),
-        "--no-bam-output",
-        "--ci-memory", str(args.mem_mb),
-        "--forward-prob", str(STRAND_TO_FORWARD_PROB[args.read_strand]),
-        "--paired-end",
-        args.anno_bam,
-        args.rsem_index,
-        args.outprefix,
-    ]  # fmt: skip
-    logger.info("Running RSEM command %s", " ".join(rsem_call))
-    subprocess.check_call(rsem_call)
+    # RSEM's temp files on CephFS lose writes in a stall, and their slow
+    # writeback counts against the job's memory. Keep them in $TMPDIR.
+    with tempfile.TemporaryDirectory() as tmp:
+        rsem_call = [
+            "rsem-calculate-expression",
+            "--bam",
+            "--estimate-rspd",
+            "--calc-ci",
+            "--seed", str(args.rnd_seed),
+            "-p", str(args.ncpus),
+            "--no-bam-output",
+            "--ci-memory", str(args.mem_mb),
+            "--forward-prob", str(STRAND_TO_FORWARD_PROB[args.read_strand]),
+            "--paired-end",
+            "--temporary-folder", f"{tmp}/rsem",
+            args.anno_bam,
+            args.rsem_index,
+            args.outprefix,
+        ]  # fmt: skip
+        logger.info("Running RSEM command %s", " ".join(rsem_call))
+        subprocess.check_call(rsem_call)
 
     quant_tsv = f"{args.outprefix}.genes.results"
     quants = pd.read_csv(quant_tsv, sep="\t", usecols=["TPM"])
