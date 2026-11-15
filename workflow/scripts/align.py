@@ -152,9 +152,6 @@ def build_parser():
     parser.add_argument(
         "--ram_gb", type=int, required=True, help="RAM for BAM sorting, in GB."
     )
-    parser.add_argument(
-        "--tmp_dir", required=True, help="Node-local directory for the anno BAM."
-    )
     return parser
 
 
@@ -196,8 +193,9 @@ def main(argv=None):
     pathlib.Path(fifo).unlink(missing_ok=True)  # left by a failed attempt
     os.mkfifo(fifo)
     # samtools' BGZF writes reach CephFS at a few MB/s, and STAR stalls on the
-    # FIFO behind them. Write on local disk, then copy the finished BAM.
-    with tempfile.TemporaryDirectory(dir=args.tmp_dir) as tmp:
+    # FIFO behind them. Write in $TMPDIR, node-local under Snakemake's default
+    # tmpdir resource, then copy the finished BAM.
+    with tempfile.TemporaryDirectory() as tmp:
         anno = os.path.join(tmp, "anno.bam")
         samtools = subprocess.Popen(
             [
