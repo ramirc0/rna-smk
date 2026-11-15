@@ -1,0 +1,224 @@
+# The run's QC report: metrics from gather_qc.py, audits from ENCODE's portal.
+# Each audit copies the flag, level and operators of
+# ~/Projects/encode-data-standards/transcription/bulk-rna-seq/portal-audits.md.
+# The portal's replicate Spearman and spike-in audits do not apply: every
+# sample is one library, and the pipeline uses no spike-ins.
+title: RNA-seq QC
+theme: zed
+standards:
+  name: ENCODE4 bulk RNA-seq audits
+  url: https://www.encodeproject.org/data-standards/encode4-bulk-rna/
+  source: >-
+    encode-data-standards transcription/bulk-rna-seq/portal-audits.md (b88ef92),
+    from ENCODE-DCC/encoded 9bd8ff1, audit/analysis.py:check_file_read_depth and
+    audit/experiment.py:check_file_read_length_rna
+
+groups:
+  - name: Reads
+    metrics:
+      - id: read_pairs
+        label: Read pairs
+        format: count
+        outlier: low
+        scale: log
+        table: true
+        description: Read pairs in the FASTQs, from fastp.
+      - id: read_length
+        label: Read length
+        digits: 0
+        description: Mean mate 1 length before trimming, from fastp.
+      - id: q30_pct
+        label: Q30
+        format: percent
+        digits: 1
+        outlier: low
+        description: Bases at quality 30 or above, from fastp.
+      - id: gc_pct
+        label: GC
+        format: percent
+        digits: 1
+        outlier: both
+        description: GC content of the reads, from fastp.
+      - id: duplication_pct
+        label: Duplication
+        format: percent
+        digits: 1
+        outlier: high
+        description: >-
+          fastp's duplication estimate on the raw reads. Highly expressed genes
+          make RNA-seq duplication high by nature, so only outliers count.
+      - id: passed_filter_pct
+        label: Passed fastp
+        format: percent
+        digits: 1
+        outlier: low
+        description: Reads that pass fastp's trimming and filters.
+  - name: Alignment
+    metrics:
+      - id: read_depth
+        label: Read depth
+        format: count
+        outlier: low
+        scale: log
+        table: true
+        headline: true
+        description: >-
+          STAR's uniquely mapped plus multi-mapped read pairs: the read depth the
+          portal audits.
+      - id: unique_pct
+        label: Unique
+        format: percent
+        digits: 1
+        outlier: low
+        table: true
+        headline: true
+        description: Read pairs STAR maps to one locus.
+      - id: multi_pct
+        label: Multi
+        format: percent
+        digits: 1
+        outlier: high
+        description: Read pairs STAR maps to 2 to 20 loci.
+      - id: too_many_loci_pct
+        label: Too many loci
+        format: percent
+        digits: 2
+        outlier: high
+        description: Read pairs STAR drops for mapping to more than 20 loci.
+      - id: too_short_pct
+        label: Too short
+        format: percent
+        digits: 1
+        outlier: high
+        description: >-
+          Read pairs unmapped because the best alignment covers too little of the
+          read. Adapter dimers and contamination raise it.
+      - id: mismatch_rate_pct
+        label: Mismatch rate
+        format: percent
+        digits: 2
+        outlier: high
+        description: STAR's mismatches per mapped base.
+      - id: annotated_splices_pct
+        label: Annotated splices
+        format: percent
+        digits: 1
+        outlier: low
+        description: STAR's spliced alignments at junctions in the GTF.
+      - id: mapped_length
+        label: Mapped length
+        digits: 0
+        outlier: both
+        description: STAR's mean mapped length of a read pair.
+      - id: properly_paired_pct
+        label: Proper pairs
+        format: percent
+        digits: 1
+        outlier: low
+        description: Properly paired reads in the genome BAM, from samtools flagstat.
+  - name: Quantification
+    metrics:
+      - id: transcriptome_pct
+        label: Transcriptome
+        format: percent
+        digits: 1
+        outlier: low
+        table: true
+        headline: true
+        description: >-
+          Read pairs RSEM can assign to an annotated transcript, over STAR's input
+          read pairs. Intronic and intergenic reads lower it.
+      - id: genes_detected
+        label: Genes > 1 TPM
+        format: count
+        outlier: both
+        table: true
+        headline: true
+        description: Genes above 1 TPM, from RSEM.
+      - id: mean_fragment_length
+        label: Fragment length
+        digits: 0
+        outlier: both
+        description: Mean of RSEM's fragment length distribution.
+  - name: Composition
+    metrics:
+      - id: mito_pct
+        label: Mito
+        format: percent
+        digits: 1
+        outlier: high
+        table: true
+        headline: true
+        description: RSEM expected counts on chrM genes.
+      - id: rrna_pct
+        label: rRNA
+        format: percent
+        digits: 2
+        outlier: high
+        table: true
+        description: >-
+          RSEM expected counts on rRNA, rRNA_pseudogene and Mt_rRNA genes.
+          Ribosomal depletion that failed raises it.
+      - id: protein_coding_pct
+        label: Protein coding
+        format: percent
+        digits: 1
+        outlier: both
+        description: RSEM expected counts on protein_coding genes.
+      - id: lncrna_pct
+        label: lncRNA
+        format: percent
+        digits: 1
+        outlier: both
+        description: RSEM expected counts on lncRNA genes.
+  - name: Strandedness
+    metrics:
+      - id: strand_reverse_pct
+        label: Reverse strand
+        format: percent
+        digits: 1
+        outlier: both
+        table: true
+        description: >-
+          Reads that agree with a reverse-stranded library, from RSeQC's
+          infer_experiment.py over a sample of reads.
+      - id: strand_forward_pct
+        label: Forward strand
+        format: percent
+        digits: 1
+        outlier: both
+        description: Reads that agree with a forward-stranded library.
+      - id: strand_undetermined_pct
+        label: Strand undetermined
+        format: percent
+        digits: 1
+        outlier: high
+        description: >-
+          Reads on loci where genes overlap on both strands, so infer_experiment.py
+          cannot tell.
+
+audits:
+  - flag: low read depth
+    level: WARNING
+    when: read_depth >= 20000000 AND read_depth < 30000000
+    source: analysis.py:check_file_read_depth:112-113
+  - flag: insufficient read depth
+    level: NOT_COMPLIANT
+    when: read_depth >= 1000000 AND read_depth < 20000000
+    source: analysis.py:check_file_read_depth:114-116
+  - flag: extremely low read depth
+    level: ERROR
+    when: read_depth < 1000000
+    source: analysis.py:check_file_read_depth:117-119
+  - flag: insufficient read length
+    level: NOT_COMPLIANT
+    when: read_length < 50
+    source: >-
+      experiment.py:check_file_read_length_rna:1082-1094. The portal reads the
+      FASTQ's read_length. This reads fastp's mean mate 1 length.
+
+links:
+  - label: fastp report
+    path: "{sample}/processed/{sample}.html"
+  - label: STAR log
+    path: "{sample}/align/{sample}_Log.final.out"
