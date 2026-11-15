@@ -9,7 +9,9 @@ import logging
 import os
 import pathlib
 import re
+import shutil
 import subprocess
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +152,9 @@ def build_parser():
     parser.add_argument(
         "--ram_gb", type=int, required=True, help="RAM for BAM sorting, in GB."
     )
+    parser.add_argument(
+        "--tmp_dir", required=True, help="Node-local directory for the anno BAM."
+    )
     return parser
 
 
@@ -190,24 +195,29 @@ def main(argv=None):
     fifo = f"{out}/Aligned.toTranscriptome.out.bam"
     pathlib.Path(fifo).unlink(missing_ok=True)  # left by a failed attempt
     os.mkfifo(fifo)
-    samtools = subprocess.Popen(
-        [
-            "samtools", "view",
-            "--no-PG",
-            "-@", ncpus,
-            "-b",
-            "-o", f"{prefix}_anno.bam",
-            fifo,
-        ]
-    )  # fmt: skip
-    try:
-        run(star)
-    except subprocess.CalledProcessError:
-        # samtools blocks on opening the FIFO until STAR opens it to write.
-        samtools.kill()
-        raise
-    if samtools.wait():
-        raise subprocess.CalledProcessError(samtools.returncode, samtools.args)
+    # samtools' BGZF writes reach CephFS at a few MB/s, and STAR stalls on the
+    # FIFO behind them. Write on local disk, then copy the finished BAM.
+    with tempfile.TemporaryDirectory(dir=args.tmp_dir) as tmp:
+        anno = os.path.join(tmp, "anno.bam")
+        samtools = subprocess.Popen(
+            [
+                "samtools", "view",
+                "--no-PG",
+                "-@", ncpus,
+                "-b",
+                "-o", anno,
+                fifo,
+            ]
+        )  # fmt: skip
+        try:
+            run(star)
+        except subprocess.CalledProcessError:
+            # samtools blocks on opening the FIFO until STAR opens it to write.
+            samtools.kill()
+            raise
+        if samtools.wait():
+            raise subprocess.CalledProcessError(samtools.returncode, samtools.args)
+        shutil.move(anno, f"{prefix}_anno.bam")
     os.remove(fifo)
     os.rename(f"{out}/Aligned.sortedByCoord.out.bam", f"{prefix}_genome.bam")
     os.rename(f"{out}/Log.final.out", f"{prefix}_Log.final.out")

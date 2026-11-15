@@ -71,7 +71,8 @@ rule align:
             --bamroot {wildcards.sample:q} \
             --indexdir {input.index_dir:q} \
             --ram_gb {params.ram_gb:q} \
-            --ncpus {threads:q}
+            --ncpus {threads:q} \
+            --tmp_dir {resources.tmpdir:q}
 
         samtools quickcheck {output.genome_bam:q} {output.anno_bam:q}
 
