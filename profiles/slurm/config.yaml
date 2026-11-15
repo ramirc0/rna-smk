@@ -36,6 +36,8 @@ set-threads:
   rsem_quant: 22
   gene_model: 1
   strandedness: 1
+  gather_qc: 8
+  qc_figures: 8
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
   fastp:
