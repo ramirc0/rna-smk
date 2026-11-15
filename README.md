@@ -7,8 +7,9 @@ RNA-seq.
 
 Reads are trimmed with fastp and aligned with STAR. The alignments feed bigWig
 signal tracks, RSEM gene and isoform quantification and strandedness
-inference. Three pixi workspaces split the launcher from the production and QC
-rule envs, and profiles cover local and SLURM execution.
+inference. A QC report grades every sample on ENCODE's portal audits. Four pixi
+workspaces split the launcher from the production, QC and report rule envs, and
+profiles cover local and SLURM execution.
 
 ### Layout
 
@@ -26,9 +27,12 @@ workflow/
     signals.smk          bigWig signal tracks
     gene_quantification.smk  RSEM index and quantification
     qc.smk               gene model, strandedness
+    report.smk           gene table, QC table, figures, QC report
+  report/qc.yaml         QC report spec: metrics and ENCODE audits
   scripts/               argparse scripts, each with build_parser() + main()
   envs/pixi.toml         production rule env (pixi workspace)
   envs/qc/pixi.toml      QC rule env (a separate pixi workspace)
+  envs/report/pixi.toml  QC report env (a separate pixi workspace)
 .tests/integration/      ENCODE end-to-end test: config + sample sheet
 profiles/
   local/config.yaml      local execution
@@ -66,13 +70,26 @@ QC, in `qc.smk`:
 - `strandedness` runs RSeQC's `infer_experiment.py` on the genome BAM. A
   binomial test on the strand fractions gives `forward`, `reverse` or
   `unstranded`. The result is a report only. `sequencing.strand_direction`
-  still drives RSEM and the signal tracks.
+  still drives RSEM and the signal tracks. It also keeps the three strand
+  fractions in a TSV.
+
+The QC report, in `report.smk`, uses [qc-report](https://github.com/ramirc0/qc-report):
+
+- `gene_table` lists each GTF gene's type and chromosome.
+- `gather_qc` collects every sample's QC into one table: fastp, STAR, flagstat,
+  RSEM counts and fragment lengths, the share of expected counts by gene type
+  (mitochondrial, rRNA, protein-coding, lncRNA) and the strand fractions.
+- `qc_figures` draws each sample's read quality, mapping, fragment lengths, gene
+  types, expression and strandedness.
+- `qc_report` grades each sample on ENCODE's bulk RNA-seq portal audits, read
+  depth and read length, and flags cohort outliers. The spec is
+  `workflow/report/qc.yaml`.
 
 ### Outputs
 
 Each sample writes to `<outdir>/<run_id>/<sample>/<step>/`. The STAR index,
-RSEM index and gene model do not depend on the run. They go to
-`<outdir>/refs/`. Logs and benchmarks mirror the run layout under
+RSEM index, gene model and gene table do not depend on the run. They go to
+`<outdir>/refs/`. The QC report goes to `<outdir>/<run_id>/report/`. Logs and benchmarks mirror the run layout under
 `logs/<run_id>/` and `benchmarks/<run_id>/`.
 
 | Step directory | Key outputs |
@@ -81,7 +98,8 @@ RSEM index and gene model do not depend on the run. They go to
 | `align/` | Genome BAM, transcriptome BAM, flagstat TXT and JSON, STAR `Log.final.out` and JSON |
 | `signals/` | bigWigs: `plusAll`, `plusUniq`, `minusAll`, `minusUniq`, or `all` and `uniq` |
 | `rsem_quant/` | `.genes.results`, `.isoforms.results`, genes-detected JSON |
-| `strandedness/` | `forward`, `reverse` or `unstranded` in a TXT |
+| `strandedness/` | `forward`, `reverse` or `unstranded` in a TXT, strand fractions TSV |
+| `report/` (per run) | `qc_report.html`, `qc_metrics.tsv`, `samples/<sample>.js` figures |
 
 ### Known issues
 
@@ -135,13 +153,14 @@ cp config/samples.tsv.template config/<run_id>/samples.tsv  # then edit
 ```
 
 The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
-for pixi deployment and SLURM. The rule envs are two more pixi workspaces.
+for pixi deployment and SLURM. The rule envs are three more pixi workspaces.
 `workflow/envs/` runs the production rules. RSEM is the one exception to
 bioconda. Every bioconda build of RSEM compiles out its `assert()` calls, and
 some of them read input, so the credibility intervals go wrong.
-`workflow/envs/rsem/` builds RSEM from source with pixi-build instead. `workflow/envs/qc/` runs the QC
-rules. Each `pixi.lock` pins every package. An `onstart` hook installs both
-envs on the submit host before the first job. Parallel SLURM jobs would
+`workflow/envs/rsem/` builds RSEM from source with pixi-build instead.
+`workflow/envs/qc/` runs the QC rules and `workflow/envs/report/` the QC report.
+Each `pixi.lock` pins every package. An `onstart` hook installs every env on
+the submit host before the first job. Parallel SLURM jobs would
 otherwise race to install them, and the RSEM build clones GitHub, which some
 compute nodes cannot reach.
 
