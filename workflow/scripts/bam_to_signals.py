@@ -95,11 +95,13 @@ def main(argv=None):
     for bedgraph, track in TRACKS[args.strandedness].items():
         bedgraph = os.path.join(out, bedgraph)
         # STAR writes chromosomes in genome order, not the lexical order that
-        # bigtools' default `--sorted all` expects.
+        # bigtools' default `--sorted all` expects. The parallel reader assumes
+        # lexical order and rejects some genome-order files as unsorted.
         run(
             [
                 "bigtools", "bedgraphtobigwig",
                 "--sorted", "start",
+                "--parallel", "no",
                 "--nthreads", str(args.threads),
                 bedgraph,
                 args.chrom_sizes,
