@@ -203,7 +203,7 @@ Each run keeps its config and sample sheet in `config/<run_id>/`. Name the run
 pixi shell                                                  # launcher env
 snakemake -n -p --profile profiles/local --configfile config/<run_id>/config.yaml  # dry run
 snakemake --profile profiles/local --configfile config/<run_id>/config.yaml        # local
-snakemake --profile profiles/slurm --configfile config/<run_id>/config.yaml        # SLURM
+pixi run slurm <run_id>                                                            # SLURM
 pixi run lint                                               # ruff + numpydoc
 ```
 
@@ -224,7 +224,7 @@ full GRCh38. They are two replicates each of GM12878 (ENCSR000AEC) and K562
 (ENCSR000AEL). The inputs live on the Weng Lab cluster, so it runs only there.
 
 ```bash
-snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
+pixi run test
 ```
 
 Outputs go under `results/integration/`. The test builds its own STAR and RSEM
