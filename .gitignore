@@ -243,7 +243,6 @@ layout.txt
 pipeline.txt
 prototyping
 STARManual.*
-MOHD_RESULTS_*
 old-pipeline.wdl
 rna-seq-pipeline
 RSEM-Quant-Manifest.txt

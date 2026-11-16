@@ -241,7 +241,7 @@ for the same replicates.
 - A SLURM node keeps failing jobs. List it under `slurm-exclude-failed-nodes`
   in `profiles/slurm/config.yaml`.
 
-If you have any questions or would like to provide constructive feedback, please open an issue or reach out to the MOHD DACC.
+If you have any questions or would like to provide constructive feedback, please open an issue.
 
 ## Authors
 
