@@ -1,0 +1,24 @@
+# Splicing rules. Kept apart from ../pixi.toml so a change here never reruns the
+# production rules.
+[workspace]
+name = "rna-smk-splicing"
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+exclude-newer = "7d"
+
+# leafcutter is leafcutter2/leafcutter-ds, tag LeafCutter2-ds_v1.0.0.
+[dependencies]
+python = "3.13.*"
+htslib = "==1.25"
+leafcutter = "==2.0.3"
+regtools = "==1.0.0"
+samtools = "==1.25"
+
+[exclude-newer]
+ca-certificates = "0d"
+certifi = "0d"
+pip = "0d"
+
+[pypi-exclude-newer]
+certifi = "0d"
+pip = "0d"

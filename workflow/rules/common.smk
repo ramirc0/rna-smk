@@ -32,6 +32,7 @@ RSEM_INDEX_FILES = multiext(
 )
 GENE_MODEL = f"{REFDIR}/gene_model.bed"
 GENE_TABLE = f"{REFDIR}/gene_table.tsv"
+EXON_TABLE = f"{REFDIR}/exon_table.tsv.gz"
 
 # Plain patterns, not multiext(): expand() rejects multiext-flagged paths.
 SIGNAL_TRACKS = expand(
@@ -48,6 +49,7 @@ SIGNAL_TRACKS = expand(
 SOFTWARE_ENV = pixi(workspace="../envs", env=config["pixi_env"], locked=True)
 QC_ENV = pixi(workspace="../envs/qc", env="default", locked=True)
 REPORT_ENV = pixi(workspace="../envs/report", env="default", locked=True)
+SPLICING_ENV = pixi(workspace="../envs/splicing", env="default", locked=True)
 
 
 # The pixi plugin installs the envs inside each job. Parallel SLURM jobs then race
@@ -57,6 +59,7 @@ onstart:
     shell("pixi install --manifest-path {workflow.basedir:q}/envs/pixi.toml --all --locked")
     shell("pixi install --manifest-path {workflow.basedir:q}/envs/qc/pixi.toml --all --locked")
     shell("pixi install --manifest-path {workflow.basedir:q}/envs/report/pixi.toml --all --locked")
+    shell("pixi install --manifest-path {workflow.basedir:q}/envs/splicing/pixi.toml --all --locked")
 
 
 _SHEET = Path(config["samples"])
