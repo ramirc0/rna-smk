@@ -7,9 +7,11 @@ RNA-seq.
 
 Reads are trimmed with fastp and aligned with STAR. The alignments feed bigWig
 signal tracks, RSEM gene and isoform quantification and strandedness
-inference. A QC report grades every sample on ENCODE's portal audits. Four pixi
-workspaces split the launcher from the production, QC and report rule envs, and
-profiles cover local and SLURM execution.
+inference. leafcutter clusters the cohort's introns into the input tables of
+differential splicing and sQTL mapping. A QC report grades every sample on
+ENCODE's portal audits. Five pixi workspaces split the launcher from the
+production, QC, report and splicing rule envs, and profiles cover local and
+SLURM execution.
 
 ### Layout
 
@@ -28,11 +30,13 @@ workflow/
     gene_quantification.smk  RSEM index and quantification
     qc.smk               gene model, strandedness
     report.smk           gene table, QC table, figures, QC report
+    splicing.smk         junctions, leafcutter intron clusters, sQTL tables
   report/qc.yaml         QC report spec: metrics and ENCODE audits
   scripts/               argparse scripts, each with build_parser() + main()
   envs/pixi.toml         production rule env (pixi workspace)
   envs/qc/pixi.toml      QC rule env (a separate pixi workspace)
   envs/report/pixi.toml  QC report env (a separate pixi workspace)
+  envs/splicing/pixi.toml  splicing rule env (a separate pixi workspace)
 .tests/integration/      ENCODE end-to-end test: config + sample sheet
 profiles/
   local/config.yaml      local execution
@@ -85,11 +89,40 @@ The QC report, in `report.smk`, uses [qc-report](https://github.com/ramirc0/qc-r
   depth and read length, and flags cohort outliers. The spec is
   `workflow/report/qc.yaml`.
 
+Splicing, in `splicing.smk`, uses
+[leafcutter](https://github.com/leafcutter2/leafcutter-ds) with the thresholds
+of [GTEx's sQTL pipeline](https://github.com/broadinstitute/gtex-pipeline/tree/master/qtl/leafcutter):
+
+- `junctions` keeps the uniquely mapped reads of the genome BAM (MAPQ 255) and
+  counts their splice junctions with `regtools junctions extract`. Anchors are
+  at least 8 nt and introns 50 to 500,000 bp. The junction strand comes from
+  `sequencing.strand_direction`.
+- `intron_clusters` runs `leafcutter-cluster` over every sample of the run. A
+  cluster needs 30 reads, and an intron 0.1% of its cluster's reads.
+- `splicing_phenotypes` runs `leafcutter-prepare-phenotype`. It writes the
+  normalized intron excision ratios as one genome-wide BED, without chrY, and
+  the first 10 principal components as covariates.
+- `exon_table` lists the GTF's exons with `leafcutter-gtf-to-exons`.
+
+The pipeline stops at these tables. A differential splicing test runs from the
+same env, with a groups file that names each sample's group:
+
+```bash
+pixi run --manifest-path workflow/envs/splicing/pixi.toml leafcutter-ds \
+    <outdir>/<run_id>/leafcutter/leafcutter_perind_numers.counts.gz groups.txt \
+    --baseline_group <group> --exon_file <outdir>/refs/exon_table.tsv.gz
+```
+
+An unstranded library gets no splicing outputs: STAR writes no strand tag
+here, so regtools cannot strand its junctions. A one-sample run gets no sQTL
+tables.
+
 ### Outputs
 
 Each sample writes to `<outdir>/<run_id>/<sample>/<step>/`. The STAR index,
-RSEM index, gene model and gene table do not depend on the run. They go to
-`<outdir>/refs/`. The QC report goes to `<outdir>/<run_id>/report/`. Logs and benchmarks mirror the run layout under
+RSEM index, gene model, gene table and exon table do not depend on the run.
+They go to `<outdir>/refs/`. The QC report goes to `<outdir>/<run_id>/report/`
+and the intron clusters to `<outdir>/<run_id>/leafcutter/`. Logs and benchmarks mirror the run layout under
 `logs/<run_id>/` and `benchmarks/<run_id>/`.
 
 | Step directory | Key outputs |
@@ -99,6 +132,8 @@ RSEM index, gene model and gene table do not depend on the run. They go to
 | `signals/` | bigWigs: `plusAll`, `plusUniq`, `minusAll`, `minusUniq`, or `all` and `uniq` |
 | `rsem_quant/` | `.genes.results`, `.isoforms.results`, genes-detected JSON |
 | `strandedness/` | `forward`, `reverse` or `unstranded` in a TXT, strand fractions TSV |
+| `junctions/` | `.junc.gz`: junction counts in regtools' BED12 |
+| `leafcutter/` (per run) | `leafcutter_perind_numers.counts.gz` (intron counts, for `leafcutter-ds`), `leafcutter_perind.counts.gz` (intron over cluster counts), `leafcutter_refined` (cluster definitions), `leafcutter_perind.counts.gz.qqnorm.bed.gz` with its tabix index, `leafcutter_perind.counts.gz.PCs` |
 | `report/` (per run) | `qc_report.html`, `qc_metrics.tsv`, `samples/<sample>.js` figures |
 
 ### Known issues
@@ -153,12 +188,13 @@ cp config/samples.tsv.template config/<run_id>/samples.tsv  # then edit
 ```
 
 The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
-for pixi deployment and SLURM. The rule envs are three more pixi workspaces.
+for pixi deployment and SLURM. The rule envs are four more pixi workspaces.
 `workflow/envs/` runs the production rules. RSEM is the one exception to
 bioconda. Every bioconda build of RSEM compiles out its `assert()` calls, and
 some of them read input, so the credibility intervals go wrong.
 `workflow/envs/rsem/` builds RSEM from source with pixi-build instead.
 `workflow/envs/qc/` runs the QC rules and `workflow/envs/report/` the QC report.
+`workflow/envs/splicing/` runs the splicing rules.
 Each `pixi.lock` pins every package. An `onstart` hook installs every env on
 the submit host before the first job. Parallel SLURM jobs would
 otherwise race to install them, and the RSEM build clones GitHub, which some
@@ -189,7 +225,7 @@ The references live in `resources/` (gitignored). Neither may be gzipped.
 | `references.fasta` | Reference genome FASTA. |
 | `references.gtf` | Gene annotation GTF, for STAR, RSEM and the strandedness gene model. |
 | `sequencing.is_stranded` | Write plus and minus strand signal tracks. |
-| `sequencing.strand_direction` | `forward`, `reverse` or `unstranded`. Sets RSEM's `--forward-prob`. |
+| `sequencing.strand_direction` | `forward`, `reverse` or `unstranded`. Sets RSEM's `--forward-prob` and the junction strand. |
 | `sequencing.sjdb_overhang` | STAR's `--sjdbOverhang`: read length minus 1. `<outdir>/refs/` holds one index, so a run with another value MUST use its own `outdir`. |
 | `sequencing.rsem_seed` | RSEM random seed. |
 
@@ -260,6 +296,12 @@ Danecek, Petr, James K. Bonfield, Jennifer Liddle, et al. 2021. “Twelve Years 
 Dobin, Alexander, Carrie A. Davis, Felix Schlesinger, et al. 2013. “STAR: Ultrafast Universal RNA-Seq Aligner.” Bioinformatics (Oxford, England) 29 (1): 15–21. https://doi.org/10.1093/bioinformatics/bts635.
 
 ENCODE DCC. 2022. “ENCODE RNA-seq Pipeline,” version 1.2.4. GitHub. https://github.com/ENCODE-DCC/rna-seq-pipeline.
+
+Cotto, Kelsy C., Yang-Yang Feng, Avinash Ramu, et al. 2023. “Integrated Analysis of Genomic and Transcriptomic Data for the Discovery of Splice-Associated Variants in Cancer.” Nature Communications 14 (1): 1589. https://doi.org/10.1038/s41467-023-37266-6.
+
+GTEx Consortium. 2020. “The GTEx Consortium Atlas of Genetic Regulatory Effects across Human Tissues.” Science 369 (6509): 1318–30. https://doi.org/10.1126/science.aaz1776.
+
+Li, Yang I., David A. Knowles, Jack Humphrey, et al. 2018. “Annotation-Free Quantification of RNA Splicing Using LeafCutter.” Nature Genetics 50 (1): 151–58. https://doi.org/10.1038/s41588-017-0004-9.
 
 Li, Bo, and Colin N. Dewey. 2011. “RSEM: Accurate Transcript Quantification from RNA-Seq Data with or without a Reference Genome.” BMC Bioinformatics 12 (1). https://doi.org/10.1186/1471-2105-12-323.
 
