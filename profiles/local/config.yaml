@@ -32,6 +32,7 @@ set-threads:
   strandedness: 1
   gather_qc: 8
   qc_figures: 8
+  junctions: 4
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
   fastp: {mem_mb: 4000}
@@ -40,3 +41,5 @@ set-resources:              # tune from benchmarks/ TSVs after a real run
   bam_to_signals: {mem_mb: 16000}
   rsem_index: {mem_mb: 16000}
   rsem_quant: {mem_mb: 80000}
+  intron_clusters: {mem_mb: 16000}
+  splicing_phenotypes: {mem_mb: 32000}

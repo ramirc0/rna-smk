@@ -6,6 +6,7 @@ include: "rules/signals.smk"
 include: "rules/gene_quantification.smk"
 include: "rules/qc.smk"
 include: "rules/report.smk"
+include: "rules/splicing.smk"
 
 
 rule all:
@@ -14,3 +15,4 @@ rule all:
         expand(f"{OUTDIR}/{{sample}}/rsem_quant/{{sample}}.genes.results", sample=SAMPLES),
         expand(f"{OUTDIR}/{{sample}}/strandedness/{{sample}}.txt", sample=SAMPLES),
         f"{OUTDIR}/report/qc_report.html",
+        SPLICING_TARGETS,

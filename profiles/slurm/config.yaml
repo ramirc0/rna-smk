@@ -38,6 +38,7 @@ set-threads:
   strandedness: 1
   gather_qc: 8
   qc_figures: 8
+  junctions: 4
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
   fastp:
@@ -59,6 +60,12 @@ set-resources:              # tune from benchmarks/ TSVs after a real run
     slurm_partition: "12hours,5days"
     runtime: 720m
     mem_mb: 80000 * attempt
+  intron_clusters:
+    slurm_partition: "12hours,5days"
+    runtime: 720m
+    mem_mb: 16000 * attempt
+  splicing_phenotypes:
+    mem_mb: 32000 * attempt
 
 rerun-incomplete: true
 keep-going: true
